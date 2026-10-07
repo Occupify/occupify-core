@@ -1,0 +1,63 @@
+name: Occupify Core CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build, Format Check & Run Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Grant execute permission for mvnw
+        run: |
+          sed -i 's/\r$//' mvnw
+          chmod +x mvnw
+
+      - name: Verify Code Formatting
+        id: format_check
+        run: |
+          ./mvnw -B spotless:check || {
+            echo "::error title=Code Formatting Failed::Code is not properly formatted! Run './mvnw spotless:apply' locally to format your code before pushing."
+            exit 1
+          }
+
+      - name: Build and Test with Maven
+        run: ./mvnw -B test -DfailIfNoTests=false
+
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        continue-on-error: true
+        with:
+          name: Maven Test Results
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "::notice title=CI Status::Workflow failed. Check step logs above (e.g., Code Formatting or Unit Tests)."
