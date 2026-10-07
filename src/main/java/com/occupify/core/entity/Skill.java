@@ -18,6 +18,6 @@ import lombok.Setter;
 @Table(name = "skills")
 public class Skill extends AbstractBaseEntity {
 
-    @Column(name = "name", nullable = false, unique = true, length = 100)
-    private String name;
+  @Column(name = "name", nullable = false, unique = true, length = 100)
+  private String name;
 }

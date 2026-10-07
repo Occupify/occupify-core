@@ -21,21 +21,21 @@ import lombok.Setter;
 @Table(name = "reviews")
 public class Review extends AbstractBaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contract_id", nullable = false)
-    private Contract contract;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "contract_id", nullable = false)
+  private Contract contract;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewer_user_id", nullable = false)
-    private User reviewer;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "reviewer_user_id", nullable = false)
+  private User reviewer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewee_user_id", nullable = false)
-    private User reviewee;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "reviewee_user_id", nullable = false)
+  private User reviewee;
 
-    @Column(name = "rating", nullable = false)
-    private Integer rating;
+  @Column(name = "rating", nullable = false)
+  private Integer rating;
 
-    @Column(name = "comment", columnDefinition = "TEXT")
-    private String comment;
+  @Column(name = "comment", columnDefinition = "TEXT")
+  private String comment;
 }

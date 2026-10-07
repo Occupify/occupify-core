@@ -21,10 +21,10 @@ import lombok.Setter;
 @Table(name = "report_evidences")
 public class ReportEvidence extends AbstractBaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "report_id", nullable = false)
-    private Report report;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "report_id", nullable = false)
+  private Report report;
 
-    @Column(name = "file_url", nullable = false, length = 500)
-    private String fileUrl;
+  @Column(name = "file_url", nullable = false, length = 500)
+  private String fileUrl;
 }

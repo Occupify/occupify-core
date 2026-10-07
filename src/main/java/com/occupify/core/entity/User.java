@@ -22,20 +22,20 @@ import lombok.Setter;
 @Table(name = "users")
 public class User extends AbstractAuditEntity {
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
+  @Column(name = "email", nullable = false, unique = true)
+  private String email;
 
-    @Column(name = "full_name", length = 150)
-    private String fullName;
+  @Column(name = "full_name", length = 150)
+  private String fullName;
 
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
+  @Column(name = "avatar_url", length = 500)
+  private String avatarUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, length = 50)
-    private UserRole role;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "role", nullable = false, length = 50)
+  private UserRole role;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
-    private UserStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false, length = 50)
+  private UserStatus status;
 }

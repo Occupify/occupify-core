@@ -11,15 +11,14 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -30,34 +29,34 @@ import java.time.LocalDateTime;
 @Table(name = "projects")
 public class Project extends AbstractBaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employer_id", nullable = false)
-    private User employer;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "employer_id", nullable = false)
+  private User employer;
 
-    @Column(name = "title", nullable = false)
-    private String title;
+  @Column(name = "title", nullable = false)
+  private String title;
 
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+  @Column(name = "description", columnDefinition = "TEXT")
+  private String description;
 
-    @Column(name = "start_price", precision = 12, scale = 2)
-    private BigDecimal startPrice;
+  @Column(name = "start_price", precision = 12, scale = 2)
+  private BigDecimal startPrice;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "period", length = 50)
-    private ProjectPeriod period;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "period", length = 50)
+  private ProjectPeriod period;
 
-    @Column(name = "due_date")
-    private LocalDate dueDate;
+  @Column(name = "due_date")
+  private LocalDate dueDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "experience_level", length = 50)
-    private ExperienceLevel experienceLevel;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "experience_level", length = 50)
+  private ExperienceLevel experienceLevel;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
-    private ProjectStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false, length = 50)
+  private ProjectStatus status;
 
-    @Column(name = "closed_at")
-    private LocalDateTime closedAt;
+  @Column(name = "closed_at")
+  private LocalDateTime closedAt;
 }

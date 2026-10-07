@@ -26,30 +26,30 @@ import lombok.Setter;
 @Table(name = "reports")
 public class Report extends AbstractBaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_user_id", nullable = false)
-    private User reporter;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "reporter_user_id", nullable = false)
+  private User reporter;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "target_type", nullable = false, length = 50)
-    private ReportTargetType targetType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "target_type", nullable = false, length = 50)
+  private ReportTargetType targetType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_user_id")
-    private User targetUser;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "target_user_id")
+  private User targetUser;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_project_id")
-    private Project targetProject;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "target_project_id")
+  private Project targetProject;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "reason_category", nullable = false, length = 50)
-    private ReportReasonCategory reasonCategory;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "reason_category", nullable = false, length = 50)
+  private ReportReasonCategory reasonCategory;
 
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+  @Column(name = "description", columnDefinition = "TEXT")
+  private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
-    private ReportStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false, length = 50)
+  private ReportStatus status;
 }
