@@ -18,6 +18,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +35,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(RouteConstants.PROJECTS)
 @Tag(
@@ -41,11 +45,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProjectController extends AbstractBaseController {
 
   private final ProjectService projectService;
-
-  public ProjectController(ProjectService projectService) {
-    super();
-    this.projectService = projectService;
-  }
 
   @PostMapping
   @Operation(

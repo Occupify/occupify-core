@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.MethodParameter;
@@ -23,18 +24,12 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class AuthenticatedUserArgumentResolver implements HandlerMethodArgumentResolver {
 
   private final UserRepository userRepository;
   private final ObjectMapper objectMapper;
-
-  public AuthenticatedUserArgumentResolver(
-      UserRepository userRepository, ObjectMapper objectMapper) {
-    super();
-    this.userRepository = userRepository;
-    this.objectMapper = objectMapper;
-  }
 
   @Value("${app.auth.dev-mock.enabled:false}")
   private boolean devMockEnabled;

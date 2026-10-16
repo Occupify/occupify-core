@@ -27,6 +27,7 @@ import com.occupify.core.service.ProjectService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 @Transactional(readOnly = true)
 public class ProjectServiceImpl implements ProjectService {
@@ -44,20 +46,6 @@ public class ProjectServiceImpl implements ProjectService {
   private final UserRepository userRepository;
   private final ProjectMapper projectMapper;
   private final ProjectEventProducer projectEventProducer;
-
-  public ProjectServiceImpl(
-      ProjectRepository projectRepository,
-      JobRepository jobRepository,
-      UserRepository userRepository,
-      ProjectMapper projectMapper,
-      ProjectEventProducer projectEventProducer) {
-    super();
-    this.projectRepository = projectRepository;
-    this.jobRepository = jobRepository;
-    this.userRepository = userRepository;
-    this.projectMapper = projectMapper;
-    this.projectEventProducer = projectEventProducer;
-  }
 
   @Override
   @Transactional

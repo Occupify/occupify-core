@@ -3,21 +3,18 @@ package com.occupify.core.producer.impl;
 import com.occupify.core.event.ProjectClosedEvent;
 import com.occupify.core.event.ProjectCreatedEvent;
 import com.occupify.core.producer.ProjectEventProducer;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class ProjectEventProducerImpl implements ProjectEventProducer {
 
   private final RabbitTemplate rabbitTemplate;
-
-  public ProjectEventProducerImpl(RabbitTemplate rabbitTemplate) {
-    super();
-    this.rabbitTemplate = rabbitTemplate;
-  }
 
   @Value("${app.rabbitmq.exchange:occupify.notification.exchange}")
   private String exchange;
