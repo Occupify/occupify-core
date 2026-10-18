@@ -9,3 +9,12 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+
+app:
+  rabbitmq:
+    exchange: occupify.notification.exchange
+    project-created-routing-key: project.created
+    project-closed-routing-key: project.closed
+  auth:
+    dev-mock:
+      enabled: false
