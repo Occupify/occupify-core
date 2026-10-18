@@ -9,6 +9,6 @@ public record UserContext(UUID userId, UserRole role, String email) {
   }
 
   public boolean isUser() {
-    return role != UserRole.ADMIN;
+    return role == UserRole.USER;
   }
 }

@@ -37,7 +37,7 @@ public class AuthenticatedUserArgumentResolver implements HandlerMethodArgumentR
   @Value("${app.auth.dev-mock.user-id:00000000-0000-0000-0000-000000000001}")
   private String devMockUserId;
 
-  @Value("${app.auth.dev-mock.user-role:CLIENT}")
+  @Value("${app.auth.dev-mock.user-role:USER}")
   private String devMockUserRole;
 
   @Value("${app.auth.dev-mock.user-email:dev-employer@occupify.local}")
@@ -71,12 +71,12 @@ public class AuthenticatedUserArgumentResolver implements HandlerMethodArgumentR
             SystemErrorCode.INVALID_PARAMETER, "Invalid UUID format in X-User-Id header");
       }
 
-      UserRole role = UserRole.CLIENT;
+      UserRole role = UserRole.USER;
       if (StringUtils.hasText(userRoleHeader)) {
         try {
           role = UserRole.valueOf(userRoleHeader.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-          log.warn("[Security] Unknown X-User-Role '{}', defaulting to CLIENT", userRoleHeader);
+          log.warn("[Security] Unknown X-User-Role '{}', defaulting to USER", userRoleHeader);
         }
       }
 
@@ -146,12 +146,12 @@ public class AuthenticatedUserArgumentResolver implements HandlerMethodArgumentR
 
       UUID userId = UUID.fromString(userIdStr.trim());
 
-      UserRole role = UserRole.CLIENT;
+      UserRole role = UserRole.USER;
       if (jsonNode.hasNonNull("role")) {
         try {
           role = UserRole.valueOf(jsonNode.get("role").asText().trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-          log.warn("[Security] Unknown role in JWT payload, defaulting to CLIENT");
+          log.warn("[Security] Unknown role in JWT payload, defaulting to USER");
         }
       }
 
@@ -181,7 +181,6 @@ public class AuthenticatedUserArgumentResolver implements HandlerMethodArgumentR
               .fullName(
                   "User "
                       + (StringUtils.hasText(email) ? email : userId.toString().substring(0, 8)))
-              .avatarUrl("https://occupify.local/dev-avatar.png")
               .role(role)
               .status(UserStatus.ACTIVE)
               .build();

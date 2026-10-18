@@ -1,7 +1,10 @@
 package com.occupify.core.enums;
 
 public enum UserRole {
-  FREELANCER,
-  CLIENT,
-  ADMIN
+  ADMIN,
+  USER;
+
+  public static boolean isAdmin(String role) {
+    return ADMIN.name().equalsIgnoreCase(role);
+  }
 }

@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 @Getter
 @Setter
@@ -27,10 +28,10 @@ public class User extends AbstractAuditEntity {
   private String email;
 
   @Column(name = "full_name", length = 150)
-  private String fullName;
+  private @Nullable String fullName;
 
   @Column(name = "avatar_url", length = 500)
-  private String avatarUrl;
+  private @Nullable String avatarUrl;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 50)
