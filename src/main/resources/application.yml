@@ -36,11 +36,16 @@ app:
     exchange: ${RABBITMQ_NOTIFICATION_EXCHANGE:occupify.notification.exchange}
     project-created-routing-key: ${RABBITMQ_PROJECT_CREATED_ROUTING_KEY:project.created}
     project-closed-routing-key: ${RABBITMQ_PROJECT_CLOSED_ROUTING_KEY:project.closed}
+    user-queue: ${RABBITMQ_USER_QUEUE:occupify.core.user.queue}
+    user-registered-routing-key: ${RABBITMQ_USER_REGISTERED_ROUTING_KEY:user.registered}
+    dlx-exchange: ${RABBITMQ_DLX_EXCHANGE:occupify.core.dlx}
+    dlq-queue: ${RABBITMQ_USER_DLQ:occupify.core.user.dlq}
+    dlq-routing-key: ${RABBITMQ_USER_DLQ_ROUTING_KEY:user.dlq}
   auth:
     dev-mock:
       enabled: ${DEV_MOCK_AUTH_ENABLED:false}
       user-id: 00000000-0000-0000-0000-000000000001
-      user-role: CLIENT
+      user-role: USER
       user-email: dev-employer@occupify.local
 
 springdoc:
