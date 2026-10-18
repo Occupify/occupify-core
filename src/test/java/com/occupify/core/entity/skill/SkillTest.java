@@ -10,10 +10,11 @@ class SkillTest {
   @Test
   void testSkillBuilderAndGetters() {
     UUID id = UUID.randomUUID();
-    Skill skill = Skill.builder().name("Java").build();
+    Skill skill = Skill.builder().name("Java").category("Backend").build();
     skill.setId(id);
 
     assertEquals(id, skill.getId());
     assertEquals("Java", skill.getName());
+    assertEquals("Backend", skill.getCategory());
   }
 }
