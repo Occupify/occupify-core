@@ -36,6 +36,8 @@ app:
     exchange: ${RABBITMQ_NOTIFICATION_EXCHANGE:occupify.notification.exchange}
     project-created-routing-key: ${RABBITMQ_PROJECT_CREATED_ROUTING_KEY:project.created}
     project-closed-routing-key: ${RABBITMQ_PROJECT_CLOSED_ROUTING_KEY:project.closed}
+    bid-created-routing-key: ${RABBITMQ_BID_CREATED_ROUTING_KEY:bid.created}
+    bid-cancelled-routing-key: ${RABBITMQ_BID_CANCELLED_ROUTING_KEY:bid.cancelled}
     user-queue: ${RABBITMQ_USER_QUEUE:occupify.core.user.queue}
     user-registered-routing-key: ${RABBITMQ_USER_REGISTERED_ROUTING_KEY:user.registered}
     dlx-exchange: ${RABBITMQ_DLX_EXCHANGE:occupify.core.dlx}
