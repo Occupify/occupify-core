@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.springframework.lang.Nullable;
+import org.springframework.web.multipart.MultipartFile;
 
 public record CreateBidRequest(
     @NotNull(message = "Job ID is required")
@@ -28,8 +30,8 @@ public record CreateBidRequest(
     @Size(max = 5000, message = "Proposal message cannot exceed 5000 characters")
     String message,
 
-    @Size(max = 255, message = "Attachment CV URL cannot exceed 255 characters")
-    String attachmentCvUrl,
+    @Nullable
+    MultipartFile attachmentCvUrl,
 
     @Size(max = 255, message = "Portfolio link cannot exceed 255 characters")
     String portfolioLink

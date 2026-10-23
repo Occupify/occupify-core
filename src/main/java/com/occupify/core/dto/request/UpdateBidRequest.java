@@ -4,6 +4,8 @@ import com.occupify.core.enums.SalaryType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import org.springframework.lang.Nullable;
+import org.springframework.web.multipart.MultipartFile;
 
 public record UpdateBidRequest(
     SalaryType proposedSalaryType,
@@ -20,8 +22,11 @@ public record UpdateBidRequest(
     @Size(max = 5000, message = "Proposal message cannot exceed 5000 characters")
     String message,
 
-    @Size(max = 255, message = "Attachment CV URL cannot exceed 255 characters")
-    String attachmentCvUrl,
+    @Nullable
+    MultipartFile attachmentCvUrl,
+
+    @Nullable
+    Boolean removeAttachmentCv,
 
     @Size(max = 255, message = "Portfolio link cannot exceed 255 characters")
     String portfolioLink
