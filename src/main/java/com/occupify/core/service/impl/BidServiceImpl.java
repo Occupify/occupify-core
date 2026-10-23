@@ -1,5 +1,6 @@
 package com.occupify.core.service.impl;
 
+import com.occupify.core.constant.StorageConstants;
 import com.occupify.core.dto.request.BidFilterRequest;
 import com.occupify.core.dto.request.CreateBidRequest;
 import com.occupify.core.dto.request.UpdateBidRequest;
@@ -26,6 +27,7 @@ import com.occupify.core.repository.project.ProjectRepository;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.BidService;
+import com.occupify.core.service.storage.StorageService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -40,7 +42,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-@Transactional(readOnly = true)
 public class BidServiceImpl implements BidService {
 
   private final BidRepository bidRepository;
@@ -49,9 +50,9 @@ public class BidServiceImpl implements BidService {
   private final UserRepository userRepository;
   private final BidMapper bidMapper;
   private final BidEventProducer bidEventProducer;
+  private final StorageService storageService;
 
   @Override
-  @Transactional
   public BidResponse createBid(CreateBidRequest request, UserContext userContext) {
     log.info(
         "[BidService] User [{}] is submitting bid for job [{}]",
@@ -74,7 +75,7 @@ public class BidServiceImpl implements BidService {
 
     Job job =
         jobRepository
-            .findById(request.jobId())
+            .findWithProjectById(request.jobId())
             .orElseThrow(
                 () ->
                     new BidException(
@@ -120,7 +121,30 @@ public class BidServiceImpl implements BidService {
       bid.setProposedSalaryType(job.getSalaryType());
     }
 
-    Bid saved = bidRepository.save(bid);
+    String uploadedCvUrl = null;
+    if (request.attachmentCvUrl() != null && !request.attachmentCvUrl().isEmpty()) {
+      uploadedCvUrl =
+          storageService.uploadDocument(
+              StorageConstants.getResumePath(userContext.userId()), request.attachmentCvUrl());
+      bid.setAttachmentCvUrl(uploadedCvUrl);
+    }
+
+    Bid saved;
+    try {
+      saved = bidRepository.save(bid);
+    } catch (Exception ex) {
+      if (uploadedCvUrl != null) {
+        try {
+          storageService.deleteFile(uploadedCvUrl);
+        } catch (Exception deleteEx) {
+          log.error(
+              "[BidService] Failed to cleanup uploaded CV [{}] after DB save failure",
+              uploadedCvUrl,
+              deleteEx);
+        }
+      }
+      throw ex;
+    }
 
     bidEventProducer.publishBidCreated(
         new BidCreatedEvent(
@@ -139,6 +163,7 @@ public class BidServiceImpl implements BidService {
   }
 
   @Override
+  @Transactional(readOnly = true)
   public Page<BidResponse> getMyBids(
       BidFilterRequest filter, Pageable pageable, UserContext userContext) {
     log.info("[BidService] Retrieving bids submitted by user [{}]", userContext.userId());
@@ -148,6 +173,7 @@ public class BidServiceImpl implements BidService {
   }
 
   @Override
+  @Transactional(readOnly = true)
   public Page<BidResponse> getBids(
       BidFilterRequest filter, Pageable pageable, UserContext userContext) {
     log.info("[BidService] Querying bids with filter: {} by user [{}]", filter, userContext.userId());
@@ -196,6 +222,7 @@ public class BidServiceImpl implements BidService {
   }
 
   @Override
+  @Transactional(readOnly = true)
   public BidResponse getBidDetail(UUID id, UserContext userContext) {
     log.info("[BidService] Retrieving bid [{}] by user [{}]", id, userContext.userId());
     Bid bid =
@@ -220,6 +247,7 @@ public class BidServiceImpl implements BidService {
   }
 
   @Override
+  @Transactional(readOnly = true)
   public BidResponse getMyBidForJob(UUID jobId, UserContext userContext) {
     log.info(
         "[BidService] Retrieving user [{}] proposal for job [{}]",
@@ -238,7 +266,6 @@ public class BidServiceImpl implements BidService {
   }
 
   @Override
-  @Transactional
   public BidResponse updateBid(UUID id, UpdateBidRequest request, UserContext userContext) {
     log.info("[BidService] Updating bid [{}] by user [{}]", id, userContext.userId());
     Bid bid =
@@ -267,14 +294,51 @@ public class BidServiceImpl implements BidService {
           "Cannot update bid because the parent project is closed");
     }
 
+    String oldCvUrl = bid.getAttachmentCvUrl();
+    String newCvUrl = null;
+    boolean hasNewFile = request.attachmentCvUrl() != null && !request.attachmentCvUrl().isEmpty();
+    boolean shouldRemoveFile = Boolean.TRUE.equals(request.removeAttachmentCv());
+
+    if (hasNewFile) {
+      newCvUrl =
+          storageService.uploadDocument(
+              StorageConstants.getResumePath(userContext.userId()), request.attachmentCvUrl());
+      bid.setAttachmentCvUrl(newCvUrl);
+    } else if (shouldRemoveFile) {
+      bid.setAttachmentCvUrl(null);
+    }
+
     bidMapper.updateEntity(bid, request);
-    Bid updated = bidRepository.save(bid);
+
+    Bid updated;
+    try {
+      updated = bidRepository.save(bid);
+    } catch (Exception ex) {
+      if (newCvUrl != null) {
+        try {
+          storageService.deleteFile(newCvUrl);
+        } catch (Exception deleteEx) {
+          log.error(
+              "[BidService] Failed to cleanup newly uploaded CV [{}] after DB update failure",
+              newCvUrl,
+              deleteEx);
+        }
+      }
+      throw ex;
+    }
+
+    if ((hasNewFile || shouldRemoveFile) && oldCvUrl != null && !oldCvUrl.isBlank()) {
+      try {
+        storageService.deleteFile(oldCvUrl);
+      } catch (Exception ex) {
+        log.warn("[BidService] Failed to delete obsolete CV [{}] from storage", oldCvUrl, ex);
+      }
+    }
 
     return bidMapper.toResponse(updated);
   }
 
   @Override
-  @Transactional
   public void cancelBid(UUID id, UserContext userContext) {
     log.info("[BidService] Cancelling bid [{}] by user [{}]", id, userContext.userId());
     Bid bid =
@@ -297,6 +361,8 @@ public class BidServiceImpl implements BidService {
           "Only pending bids can be cancelled (current status: " + bid.getStatus() + ")");
     }
 
+    String cvUrl = bid.getAttachmentCvUrl();
+
     bidRepository.delete(bid);
 
     bidEventProducer.publishBidCancelled(
@@ -307,5 +373,13 @@ public class BidServiceImpl implements BidService {
             bid.getJob().getProject().getEmployer().getId(),
             bid.getFreelancer().getId(),
             LocalDateTime.now()));
+
+    if (cvUrl != null && !cvUrl.isBlank()) {
+      try {
+        storageService.deleteFile(cvUrl);
+      } catch (Exception ex) {
+        log.warn("[BidService] Failed to delete CV [{}] after bid cancellation", cvUrl, ex);
+      }
+    }
   }
 }

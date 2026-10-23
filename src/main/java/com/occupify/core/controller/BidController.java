@@ -25,13 +25,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,13 +47,13 @@ public class BidController extends AbstractBaseController {
 
   private final BidService bidService;
 
-  @PostMapping
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(
       summary = "Submit a bid for a job role",
       description =
-          "Submits a proposal for a recruiting job in an open project. Authorized for users (employees).")
+          "Submits a proposal with optional CV document (PDF/Image) for a recruiting job in an open project. Authorized for users (employees).")
   public ResponseEntity<CreatedResponse<BidResponse>> createBid(
-      @Valid @RequestBody CreateBidRequest request,
+      @Valid @ModelAttribute CreateBidRequest request,
       @Parameter(hidden = true) @Authenticated UserContext userContext) {
     BidResponse response = bidService.createBid(request, userContext);
     return created(response, MessageConstants.BID_CREATED);
@@ -110,14 +111,14 @@ public class BidController extends AbstractBaseController {
     return successSingle(response, MessageConstants.BID_RETRIEVED);
   }
 
-  @PutMapping(RouteConstants.BID_ID)
+  @PutMapping(value = RouteConstants.BID_ID, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(
       summary = "Update an existing bid proposal",
       description =
           "Updates rate, message, or attachments of a pending proposal. Only permitted by applicant while status is PENDING.")
   public ResponseEntity<SingleResponse<BidResponse>> updateBid(
       @PathVariable UUID id,
-      @Valid @RequestBody UpdateBidRequest request,
+      @Valid @ModelAttribute UpdateBidRequest request,
       @Parameter(hidden = true) @Authenticated UserContext userContext) {
     BidResponse response = bidService.updateBid(id, request, userContext);
     return successSingle(response, MessageConstants.BID_UPDATED);
