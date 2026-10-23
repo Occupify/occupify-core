@@ -14,5 +14,4 @@ public record BidCreatedEvent(
     UUID freelancerId,
     String freelancerName,
     BigDecimal proposedRate,
-    LocalDateTime createdAt
-) {}
+    LocalDateTime createdAt) {}

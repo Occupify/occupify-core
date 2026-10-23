@@ -11,5 +11,4 @@ public record BidProjectSummaryResponse(
     ProjectPeriod period,
     ProjectStatus status,
     LocalDate dueDate,
-    EmployerSummaryResponse employer
-) {}
+    EmployerSummaryResponse employer) {}

@@ -11,5 +11,4 @@ public record BidJobSummaryResponse(
     SalaryType salaryType,
     BigDecimal budgetMin,
     BigDecimal budgetMax,
-    JobStatus status
-) {}
+    JobStatus status) {}

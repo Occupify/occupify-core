@@ -9,5 +9,4 @@ public record BidCancelledEvent(
     UUID projectId,
     UUID employerId,
     UUID freelancerId,
-    LocalDateTime cancelledAt
-) {}
+    LocalDateTime cancelledAt) {}

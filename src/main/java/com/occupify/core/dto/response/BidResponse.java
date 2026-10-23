@@ -20,5 +20,4 @@ public record BidResponse(
     String portfolioLink,
     BidStatus status,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
-) {}
+    LocalDateTime updatedAt) {}

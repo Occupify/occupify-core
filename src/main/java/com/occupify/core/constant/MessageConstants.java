@@ -16,4 +16,3 @@ public final class MessageConstants {
   public static final String BID_LIST_RETRIEVED = "Bids retrieved successfully";
   public static final String BID_CANCELLED = "Bid cancelled successfully";
 }
-

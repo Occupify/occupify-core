@@ -13,4 +13,3 @@ public final class RouteConstants {
   public static final String BIDS_MY = "/my";
   public static final String BID_JOB = "/job/{jobId}";
 }
-

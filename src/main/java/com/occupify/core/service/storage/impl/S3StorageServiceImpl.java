@@ -37,8 +37,7 @@ public class S3StorageServiceImpl implements StorageService {
 
     String originalFilename = file.getOriginalFilename();
     String extension = extractExtension(originalFilename, file.getContentType());
-    String cleanDirectory =
-        directory != null ? directory.replaceAll("^/+|/+$", "") : "documents";
+    String cleanDirectory = directory != null ? directory.replaceAll("^/+|/+$", "") : "documents";
     String key = String.format("%s/%s%s", cleanDirectory, UUID.randomUUID(), extension);
 
     log.info(
@@ -63,14 +62,10 @@ public class S3StorageServiceImpl implements StorageService {
       return publicUrl;
     } catch (IOException e) {
       log.error("Failed to read input stream for document upload: {}", originalFilename, e);
-      throw new StorageException(
-          StorageErrorCode.UPLOAD_FAILED, "Failed to read uploaded file", e);
+      throw new StorageException(StorageErrorCode.UPLOAD_FAILED, "Failed to read uploaded file", e);
     } catch (Exception e) {
       log.error(
-          "Failed to upload document to S3: bucket={}, key={}",
-          properties.getBucketName(),
-          key,
-          e);
+          "Failed to upload document to S3: bucket={}, key={}", properties.getBucketName(), key, e);
       throw new StorageException(
           StorageErrorCode.UPLOAD_FAILED, "S3 upload failed: " + e.getMessage(), e);
     }

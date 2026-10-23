@@ -23,7 +23,8 @@ public final class BidSpecification {
       }
 
       if (effectiveFreelancerId != null) {
-        predicates.add(criteriaBuilder.equal(root.get("freelancer").get("id"), effectiveFreelancerId));
+        predicates.add(
+            criteriaBuilder.equal(root.get("freelancer").get("id"), effectiveFreelancerId));
       }
 
       if (filter != null) {
@@ -32,7 +33,8 @@ public final class BidSpecification {
         }
 
         if (filter.projectId() != null) {
-          predicates.add(criteriaBuilder.equal(root.get("job").get("project").get("id"), filter.projectId()));
+          predicates.add(
+              criteriaBuilder.equal(root.get("job").get("project").get("id"), filter.projectId()));
         }
 
         if (filter.status() != null) {

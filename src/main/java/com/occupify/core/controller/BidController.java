@@ -42,7 +42,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(RouteConstants.BIDS)
 @Tag(
     name = "Bids",
-    description = "Endpoints for submitting, querying, updating, and cancelling project job proposals")
+    description =
+        "Endpoints for submitting, querying, updating, and cancelling project job proposals")
 public class BidController extends AbstractBaseController {
 
   private final BidService bidService;
@@ -62,8 +63,7 @@ public class BidController extends AbstractBaseController {
   @GetMapping(RouteConstants.BIDS_MY)
   @Operation(
       summary = "Get employee's submitted bids",
-      description =
-          "Retrieves a paginated list of proposals submitted by the authenticated user.")
+      description = "Retrieves a paginated list of proposals submitted by the authenticated user.")
   public ResponseEntity<PageResponse<BidResponse>> getMyBids(
       @ParameterObject BidFilterRequest filter,
       @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
@@ -93,8 +93,7 @@ public class BidController extends AbstractBaseController {
       description =
           "Retrieves the authenticated employee's existing proposal for the specified job role.")
   public ResponseEntity<SingleResponse<BidResponse>> getMyBidForJob(
-      @PathVariable UUID jobId,
-      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+      @PathVariable UUID jobId, @Parameter(hidden = true) @Authenticated UserContext userContext) {
     BidResponse response = bidService.getMyBidForJob(jobId, userContext);
     return successSingle(response, MessageConstants.BID_RETRIEVED);
   }
@@ -105,8 +104,7 @@ public class BidController extends AbstractBaseController {
       description =
           "Retrieves full details of a specific bid proposal. Accessible by applicant or project owner.")
   public ResponseEntity<SingleResponse<BidResponse>> getBidDetail(
-      @PathVariable UUID id,
-      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
     BidResponse response = bidService.getBidDetail(id, userContext);
     return successSingle(response, MessageConstants.BID_RETRIEVED);
   }
@@ -130,8 +128,7 @@ public class BidController extends AbstractBaseController {
       description =
           "Withdraws and deletes a proposal. Only permitted by applicant while status is PENDING.")
   public ResponseEntity<SuccessResponse> cancelBid(
-      @PathVariable UUID id,
-      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
     bidService.cancelBid(id, userContext);
     return success(MessageConstants.BID_CANCELLED);
   }

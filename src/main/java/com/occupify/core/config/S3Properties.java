@@ -12,24 +12,19 @@ import org.springframework.lang.Nullable;
 @ConfigurationProperties(prefix = "app.storage.s3")
 public class S3Properties {
 
-  @Nullable
-  private String bucketNamespace;
+  @Nullable private String bucketNamespace;
 
   private String region = "ap-singapore-1";
 
-  @Nullable
-  private String endpoint;
+  @Nullable private String endpoint;
 
   private String bucketName = "occupify-storage";
 
-  @Nullable
-  private String accessKey;
+  @Nullable private String accessKey;
 
-  @Nullable
-  private String secretKey;
+  @Nullable private String secretKey;
 
-  @Nullable
-  private String publicUrlPrefix;
+  @Nullable private String publicUrlPrefix;
 
   private boolean pathStyleAccessEnabled = true;
 }

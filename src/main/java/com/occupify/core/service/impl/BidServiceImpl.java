@@ -90,8 +90,7 @@ public class BidServiceImpl implements BidService {
     Project project = job.getProject();
     if (project.getStatus() != ProjectStatus.OPEN) {
       throw new BidException(
-          BidErrorCode.PROJECT_NOT_OPEN,
-          "Project " + project.getId() + " is closed");
+          BidErrorCode.PROJECT_NOT_OPEN, "Project " + project.getId() + " is closed");
     }
 
     if (project.getDueDate() != null && LocalDate.now().isAfter(project.getDueDate())) {
@@ -102,14 +101,12 @@ public class BidServiceImpl implements BidService {
 
     if (project.getEmployer().getId().equals(userContext.userId())) {
       throw new BidException(
-          BidErrorCode.CANNOT_BID_OWN_PROJECT,
-          "You cannot submit a bid to your own project");
+          BidErrorCode.CANNOT_BID_OWN_PROJECT, "You cannot submit a bid to your own project");
     }
 
     if (bidRepository.existsByJobIdAndFreelancerId(request.jobId(), userContext.userId())) {
       throw new BidException(
-          BidErrorCode.DUPLICATE_BID,
-          "You have already submitted a proposal for this job");
+          BidErrorCode.DUPLICATE_BID, "You have already submitted a proposal for this job");
     }
 
     Bid bid = bidMapper.toEntity(request);
@@ -176,7 +173,8 @@ public class BidServiceImpl implements BidService {
   @Transactional(readOnly = true)
   public Page<BidResponse> getBids(
       BidFilterRequest filter, Pageable pageable, UserContext userContext) {
-    log.info("[BidService] Querying bids with filter: {} by user [{}]", filter, userContext.userId());
+    log.info(
+        "[BidService] Querying bids with filter: {} by user [{}]", filter, userContext.userId());
 
     if (filter != null && filter.projectId() != null) {
       Project project =
@@ -201,8 +199,7 @@ public class BidServiceImpl implements BidService {
               .orElseThrow(
                   () ->
                       new BidException(
-                          BidErrorCode.JOB_NOT_FOUND,
-                          "Job not found with ID: " + filter.jobId()));
+                          BidErrorCode.JOB_NOT_FOUND, "Job not found with ID: " + filter.jobId()));
       if (!job.getProject().getEmployer().getId().equals(userContext.userId())
           && !userContext.isAdmin()) {
         throw new BidException(
@@ -229,18 +226,16 @@ public class BidServiceImpl implements BidService {
         bidRepository
             .findWithDetailsById(id)
             .orElseThrow(
-                () ->
-                    new BidException(
-                        BidErrorCode.BID_NOT_FOUND, "Bid not found with ID: " + id));
+                () -> new BidException(BidErrorCode.BID_NOT_FOUND, "Bid not found with ID: " + id));
 
     boolean isApplicant = bid.getFreelancer().getId().equals(userContext.userId());
-    boolean isEmployer = bid.getJob().getProject().getEmployer().getId().equals(userContext.userId());
+    boolean isEmployer =
+        bid.getJob().getProject().getEmployer().getId().equals(userContext.userId());
     boolean isAdmin = userContext.isAdmin();
 
     if (!isApplicant && !isEmployer && !isAdmin) {
       throw new BidException(
-          BidErrorCode.FORBIDDEN_OPERATION,
-          "You do not have permission to access bid " + id);
+          BidErrorCode.FORBIDDEN_OPERATION, "You do not have permission to access bid " + id);
     }
 
     return bidMapper.toResponse(bid);
@@ -250,9 +245,7 @@ public class BidServiceImpl implements BidService {
   @Transactional(readOnly = true)
   public BidResponse getMyBidForJob(UUID jobId, UserContext userContext) {
     log.info(
-        "[BidService] Retrieving user [{}] proposal for job [{}]",
-        userContext.userId(),
-        jobId);
+        "[BidService] Retrieving user [{}] proposal for job [{}]", userContext.userId(), jobId);
     Bid bid =
         bidRepository
             .findByJobIdAndFreelancerId(jobId, userContext.userId())
@@ -272,9 +265,7 @@ public class BidServiceImpl implements BidService {
         bidRepository
             .findWithDetailsById(id)
             .orElseThrow(
-                () ->
-                    new BidException(
-                        BidErrorCode.BID_NOT_FOUND, "Bid not found with ID: " + id));
+                () -> new BidException(BidErrorCode.BID_NOT_FOUND, "Bid not found with ID: " + id));
 
     if (!bid.getFreelancer().getId().equals(userContext.userId())) {
       throw new BidException(
@@ -290,8 +281,7 @@ public class BidServiceImpl implements BidService {
 
     if (bid.getJob().getProject().getStatus() != ProjectStatus.OPEN) {
       throw new BidException(
-          BidErrorCode.PROJECT_NOT_OPEN,
-          "Cannot update bid because the parent project is closed");
+          BidErrorCode.PROJECT_NOT_OPEN, "Cannot update bid because the parent project is closed");
     }
 
     String oldCvUrl = bid.getAttachmentCvUrl();
@@ -345,14 +335,11 @@ public class BidServiceImpl implements BidService {
         bidRepository
             .findWithDetailsById(id)
             .orElseThrow(
-                () ->
-                    new BidException(
-                        BidErrorCode.BID_NOT_FOUND, "Bid not found with ID: " + id));
+                () -> new BidException(BidErrorCode.BID_NOT_FOUND, "Bid not found with ID: " + id));
 
     if (!bid.getFreelancer().getId().equals(userContext.userId()) && !userContext.isAdmin()) {
       throw new BidException(
-          BidErrorCode.FORBIDDEN_OPERATION,
-          "Only the applicant is permitted to cancel this bid");
+          BidErrorCode.FORBIDDEN_OPERATION, "Only the applicant is permitted to cancel this bid");
     }
 
     if (bid.getStatus() != BidStatus.PENDING) {
