@@ -20,7 +20,7 @@ spring:
         format_sql: true
   flyway:
     enabled: true
-    locations: classpath:db/migration,classpath:db/migration-seed
+    locations: classpath:db/migration
     baseline-on-migrate: true
     out-of-order: true
     connect-retries: 30
