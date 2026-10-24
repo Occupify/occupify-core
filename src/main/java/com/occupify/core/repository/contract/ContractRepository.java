@@ -8,5 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ContractRepository extends JpaRepository<Contract, UUID> {
   List<Contract> findByJobId(UUID jobId);
 
-  List<Contract> findByFreelancerId(UUID freelancerId);
+  List<Contract> findByEmployerId(UUID employerId);
+
+  List<Contract> findByEmployeeId(UUID employeeId);
 }

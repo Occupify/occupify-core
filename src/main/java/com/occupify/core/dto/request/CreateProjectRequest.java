@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record CreateProjectRequest(
     @NotBlank(message = "Project title cannot be blank")
@@ -20,4 +21,6 @@ public record CreateProjectRequest(
         BigDecimal startPrice,
     @NotNull(message = "Project period is required") ProjectPeriod period,
     @FutureOrPresent(message = "Due date must be in the present or future") LocalDate dueDate,
-    ExperienceLevel experienceLevel) {}
+    ExperienceLevel experienceLevel,
+    LocalDateTime startDate,
+    LocalDateTime endDate) {}

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.occupify.core.entity.contract.Contract;
 import com.occupify.core.entity.user.User;
+import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +13,7 @@ class ReviewTest {
   @Test
   void testReviewBuilderAndGetters() {
     UUID id = UUID.randomUUID();
-    Contract contract = Contract.builder().title("Contract").build();
+    Contract contract = Contract.builder().agreedRate(BigDecimal.valueOf(1000)).salaryType("MONTHLY").build();
     User reviewer = User.builder().email("client@test.com").build();
     User reviewee = User.builder().email("freelancer@test.com").build();
 

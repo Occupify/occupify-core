@@ -28,7 +28,7 @@ class BidTest {
             .weeklyCommitmentHours("20 hours")
             .message("Ready to start")
             .attachmentCvUrl("https://example.com/cv.pdf")
-            .portfolioLink("https://portfolio.com")
+            .portfolioUrl("https://portfolio.com")
             .status(BidStatus.PENDING)
             .build();
     bid.setId(id);
@@ -42,7 +42,7 @@ class BidTest {
     assertEquals("20 hours", bid.getWeeklyCommitmentHours());
     assertEquals("Ready to start", bid.getMessage());
     assertEquals("https://example.com/cv.pdf", bid.getAttachmentCvUrl());
-    assertEquals("https://portfolio.com", bid.getPortfolioLink());
+    assertEquals("https://portfolio.com", bid.getPortfolioUrl());
     assertEquals(BidStatus.PENDING, bid.getStatus());
   }
 }

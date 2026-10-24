@@ -56,8 +56,8 @@ public class Bid extends AbstractBaseEntity {
   @Column(name = "attachment_cv_url")
   private String attachmentCvUrl;
 
-  @Column(name = "portfolio_link")
-  private String portfolioLink;
+  @Column(name = "portfolio_url")
+  private String portfolioUrl;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 50)

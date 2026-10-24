@@ -39,3 +39,7 @@ build/
 core.env
 !.env.example
 
+# Agent & Superpowers brainstorm cache
+.superpowers/
+.agent/
+

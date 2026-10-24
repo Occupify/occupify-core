@@ -20,6 +20,8 @@ class ProjectTest {
     User employer = User.builder().email("emp@test.com").build();
     LocalDate dueDate = LocalDate.of(2026, 12, 31);
     LocalDateTime closedAt = LocalDateTime.now();
+    LocalDateTime startDate = LocalDateTime.of(2026, 1, 1, 9, 0);
+    LocalDateTime endDate = LocalDateTime.of(2026, 6, 1, 18, 0);
 
     Project project =
         Project.builder()
@@ -27,10 +29,12 @@ class ProjectTest {
             .title("Website Redesign")
             .description("Redesign company website")
             .startPrice(BigDecimal.valueOf(2500.00))
-            .period(ProjectPeriod.FIXED)
+            .period(ProjectPeriod.DAY)
             .dueDate(dueDate)
             .experienceLevel(ExperienceLevel.EXPERT)
             .status(ProjectStatus.OPEN)
+            .startDate(startDate)
+            .endDate(endDate)
             .closedAt(closedAt)
             .build();
     project.setId(id);
@@ -40,10 +44,11 @@ class ProjectTest {
     assertEquals("Website Redesign", project.getTitle());
     assertEquals("Redesign company website", project.getDescription());
     assertEquals(BigDecimal.valueOf(2500.00), project.getStartPrice());
-    assertEquals(ProjectPeriod.FIXED, project.getPeriod());
-    assertEquals(dueDate, project.getDueDate());
+    assertEquals(ProjectPeriod.DAY, project.getPeriod());
     assertEquals(ExperienceLevel.EXPERT, project.getExperienceLevel());
     assertEquals(ProjectStatus.OPEN, project.getStatus());
+    assertEquals(startDate, project.getStartDate());
+    assertEquals(endDate, project.getEndDate());
     assertEquals(closedAt, project.getClosedAt());
   }
 }

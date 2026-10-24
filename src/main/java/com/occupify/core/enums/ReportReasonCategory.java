@@ -4,6 +4,7 @@ public enum ReportReasonCategory {
   FRAUD,
   OUTSIDE_PAYMENT,
   FAKE_INFORMATION,
-  SPAM_HARASSMENT,
+  SPAM,
+  HARASSMENT,
   OTHER
 }
