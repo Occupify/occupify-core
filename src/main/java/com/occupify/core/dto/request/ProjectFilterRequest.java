@@ -4,6 +4,7 @@ import com.occupify.core.enums.ExperienceLevel;
 import com.occupify.core.enums.ProjectPeriod;
 import com.occupify.core.enums.ProjectStatus;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public record ProjectFilterRequest(
@@ -13,4 +14,5 @@ public record ProjectFilterRequest(
     ProjectPeriod period,
     ExperienceLevel experienceLevel,
     BigDecimal minPrice,
-    BigDecimal maxPrice) {}
+    BigDecimal maxPrice,
+    List<String> skills) {}

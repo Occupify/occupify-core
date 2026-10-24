@@ -33,6 +33,10 @@ public interface ProjectMapper {
   Project toEntity(CreateProjectRequest request);
 
   @Mapping(target = "employer", source = "employer")
+  @Mapping(target = "salaryMin", ignore = true)
+  @Mapping(target = "salaryMax", ignore = true)
+  @Mapping(target = "skills", ignore = true)
+  @Mapping(target = "openJobsCount", ignore = true)
   ProjectResponse toResponse(Project project);
 
   @Mapping(target = "employer", source = "project.employer")
@@ -45,6 +49,8 @@ public interface ProjectMapper {
   @Mapping(target = "dueDate", source = "project.dueDate")
   @Mapping(target = "experienceLevel", source = "project.experienceLevel")
   @Mapping(target = "status", source = "project.status")
+  @Mapping(target = "startDate", source = "project.startDate")
+  @Mapping(target = "endDate", source = "project.endDate")
   @Mapping(target = "closedAt", source = "project.closedAt")
   @Mapping(target = "createdAt", source = "project.createdAt")
   @Mapping(target = "updatedAt", source = "project.updatedAt")

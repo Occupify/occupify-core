@@ -18,6 +18,8 @@ public record ProjectDetailResponse(
     LocalDate dueDate,
     ExperienceLevel experienceLevel,
     ProjectStatus status,
+    LocalDateTime startDate,
+    LocalDateTime endDate,
     LocalDateTime closedAt,
     EmployerSummaryResponse employer,
     List<JobSummaryResponse> jobs,

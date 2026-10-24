@@ -4,7 +4,6 @@ import com.occupify.core.entity.base.AbstractBaseEntity;
 import com.occupify.core.entity.job.Job;
 import com.occupify.core.entity.user.User;
 import com.occupify.core.enums.ContractStatus;
-import com.occupify.core.enums.SalaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,12 +13,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 @Getter
 @Setter
@@ -35,32 +36,35 @@ public class Contract extends AbstractBaseEntity {
   private Job job;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "freelancer_id")
-  private User freelancer;
+  @JoinColumn(name = "employer_id", nullable = false)
+  private User employer;
 
-  @Column(name = "title", nullable = false)
-  private String title;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "employee_id")
+  private @Nullable User employee;
 
-  @Column(name = "description", columnDefinition = "TEXT")
-  private String description;
+  @Column(name = "source_type", length = 50)
+  private @Nullable String sourceType;
 
-  @Column(name = "budget", precision = 12, scale = 2)
-  private BigDecimal budget;
+  @Column(name = "source_id")
+  private @Nullable UUID sourceId;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "salary_type", length = 50)
-  private SalaryType salaryType;
+  @Column(name = "agreed_rate", precision = 12, scale = 2, nullable = false)
+  private BigDecimal agreedRate;
 
-  @Column(name = "start_date")
-  private LocalDate startDate;
-
-  @Column(name = "end_date")
-  private LocalDate endDate;
-
-  @Column(name = "attachment_url", length = 500)
-  private String attachmentUrl;
+  @Column(name = "salary_type", nullable = false, length = 50)
+  private String salaryType;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 50)
   private ContractStatus status;
+
+  @Column(name = "payment_status", length = 50)
+  private @Nullable String paymentStatus;
+
+  @Column(name = "started_at")
+  private @Nullable LocalDateTime startedAt;
+
+  @Column(name = "finished_at")
+  private @Nullable LocalDateTime finishedAt;
 }
