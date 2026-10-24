@@ -14,7 +14,8 @@ class OfferTest {
   @Test
   void testOfferBuilderAndGetters() {
     UUID id = UUID.randomUUID();
-    Contract contract = Contract.builder().agreedRate(BigDecimal.valueOf(1000)).salaryType("MONTHLY").build();
+    Contract contract =
+        Contract.builder().agreedRate(BigDecimal.valueOf(1000)).salaryType("MONTHLY").build();
     User freelancer = User.builder().email("free@test.com").build();
 
     Offer offer =

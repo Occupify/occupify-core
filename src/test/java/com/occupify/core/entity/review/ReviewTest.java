@@ -13,7 +13,8 @@ class ReviewTest {
   @Test
   void testReviewBuilderAndGetters() {
     UUID id = UUID.randomUUID();
-    Contract contract = Contract.builder().agreedRate(BigDecimal.valueOf(1000)).salaryType("MONTHLY").build();
+    Contract contract =
+        Contract.builder().agreedRate(BigDecimal.valueOf(1000)).salaryType("MONTHLY").build();
     User reviewer = User.builder().email("client@test.com").build();
     User reviewee = User.builder().email("freelancer@test.com").build();
 

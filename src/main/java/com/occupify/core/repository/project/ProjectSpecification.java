@@ -151,9 +151,11 @@ public final class ProjectSpecification {
 
         if (filter.minPrice() != null) {
           Predicate maxGteMin =
-              criteriaBuilder.greaterThanOrEqualTo(budgetJobRoot.get("budgetMax"), filter.minPrice());
+              criteriaBuilder.greaterThanOrEqualTo(
+                  budgetJobRoot.get("budgetMax"), filter.minPrice());
           Predicate minGteMin =
-              criteriaBuilder.greaterThanOrEqualTo(budgetJobRoot.get("budgetMin"), filter.minPrice());
+              criteriaBuilder.greaterThanOrEqualTo(
+                  budgetJobRoot.get("budgetMin"), filter.minPrice());
           budgetPredicates.add(criteriaBuilder.or(maxGteMin, minGteMin));
         }
 

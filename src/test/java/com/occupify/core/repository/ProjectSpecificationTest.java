@@ -155,7 +155,8 @@ class ProjectSpecificationTest {
     assertTrue(page.getContent().stream().anyMatch(p -> p.getId().equals(activeProject.getId())));
     assertFalse(page.getContent().stream().anyMatch(p -> p.getId().equals(closedProject.getId())));
     assertFalse(
-        page.getContent().stream().anyMatch(p -> p.getId().equals(projectNoRecruitingJobs.getId())));
+        page.getContent().stream()
+            .anyMatch(p -> p.getId().equals(projectNoRecruitingJobs.getId())));
   }
 
   @Test

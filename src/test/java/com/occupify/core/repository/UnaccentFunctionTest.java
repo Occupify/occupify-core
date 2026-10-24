@@ -20,9 +20,7 @@ class UnaccentFunctionTest {
   void testUnaccentFunction() {
     String result =
         (String)
-            entityManager
-                .createNativeQuery("SELECT unaccent('Lập trình viên')")
-                .getSingleResult();
+            entityManager.createNativeQuery("SELECT unaccent('Lập trình viên')").getSingleResult();
     assertEquals("Lap trinh vien", result);
   }
 }
