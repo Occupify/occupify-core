@@ -117,7 +117,8 @@ class ContractServiceTest {
   }
 
   @Test
-  @DisplayName("Should create contract from Bid, cascade bid status to ACCEPTED and create Offer")
+  @DisplayName(
+      "Should create contract from Bid, cascade bid status to ACCEPTED and not create Offer")
   void shouldCreateContractFromBid() {
     UUID bidId = UUID.randomUUID();
     Bid bid = Bid.builder().job(job).freelancer(employee).status(BidStatus.PENDING).build();
@@ -151,20 +152,66 @@ class ContractServiceTest {
     assertThat(response.getTitle()).isEqualTo("Contract Backend Dev");
     assertThat(bid.getStatus()).isEqualTo(BidStatus.ACCEPTED);
     verify(bidRepository).save(bid);
-
-    ArgumentCaptor<Offer> offerCaptor = ArgumentCaptor.forClass(Offer.class);
-    verify(offerRepository).save(offerCaptor.capture());
-    Offer savedOffer = offerCaptor.getValue();
-    assertThat(savedOffer.getFreelancer()).isEqualTo(employee);
-    assertThat(savedOffer.getProposedRate()).isEqualTo(new BigDecimal("35000000.00"));
-    assertThat(savedOffer.getOfferMessage()).isEqualTo("Welcome to the team");
-    assertThat(savedOffer.getStatus()).isEqualTo(OfferStatus.PENDING);
+    verify(offerRepository, never()).save(any());
 
     ArgumentCaptor<Contract> contractCaptor = ArgumentCaptor.forClass(Contract.class);
     verify(contractRepository).save(contractCaptor.capture());
     Contract savedContract = contractCaptor.getValue();
     assertThat(savedContract.getTermsFileKey()).isNull();
     assertThat(savedContract.getStatus()).isEqualTo(ContractStatus.PENDING);
+  }
+
+  @Test
+  @DisplayName("Should create contract from Direct Offer, create Offer and link sourceId")
+  void shouldCreateContractFromDirectOffer() {
+    CreateContractRequest request =
+        CreateContractRequest.builder()
+            .jobId(job.getId())
+            .employeeId(employee.getId())
+            .sourceType("DIRECT_OFFER")
+            .title("Direct Offer Contract")
+            .agreedRate(new BigDecimal("40000000.00"))
+            .salaryType("MONTHLY")
+            .invitationMessage("Direct offer invitation")
+            .build();
+
+    when(userRepository.findById(employerId)).thenReturn(Optional.of(employer));
+    when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+    when(userRepository.findById(employee.getId())).thenReturn(Optional.of(employee));
+    when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    UUID generatedOfferId = UUID.randomUUID();
+    when(offerRepository.save(any(Offer.class)))
+        .thenAnswer(
+            inv -> {
+              Offer o = inv.getArgument(0);
+              o.setId(generatedOfferId);
+              return o;
+            });
+
+    ContractDetailResponse mockResponse =
+        ContractDetailResponse.builder().title("Direct Offer Contract").build();
+    when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
+
+    ContractDetailResponse response =
+        contractService.createContract(request, null, employerContext);
+
+    assertThat(response.getTitle()).isEqualTo("Direct Offer Contract");
+
+    ArgumentCaptor<Offer> offerCaptor = ArgumentCaptor.forClass(Offer.class);
+    verify(offerRepository).save(offerCaptor.capture());
+    Offer savedOffer = offerCaptor.getValue();
+    assertThat(savedOffer.getFreelancer()).isEqualTo(employee);
+    assertThat(savedOffer.getProposedRate()).isEqualTo(new BigDecimal("40000000.00"));
+    assertThat(savedOffer.getOfferMessage()).isEqualTo("Direct offer invitation");
+    assertThat(savedOffer.getStatus()).isEqualTo(OfferStatus.PENDING);
+
+    // contractRepository.save is called twice: initial creation and after setting sourceId
+    ArgumentCaptor<Contract> contractCaptor = ArgumentCaptor.forClass(Contract.class);
+    verify(contractRepository, times(2)).save(contractCaptor.capture());
+    Contract lastSavedContract = contractCaptor.getValue();
+    assertThat(lastSavedContract.getSourceId()).isEqualTo(generatedOfferId);
+    assertThat(lastSavedContract.getSourceType()).isEqualTo("DIRECT_OFFER");
   }
 
   @Test
@@ -266,6 +313,45 @@ class ContractServiceTest {
     assertThat(contract.getAgreedRate()).isEqualTo(new BigDecimal("25000000.00"));
     assertThat(contract.getSalaryType()).isEqualTo("PROJECT");
     assertThat(contract.getJobDescription()).isEqualTo("Updated JD");
+  }
+
+  @Test
+  @DisplayName(
+      "Should delete old terms file from S3 when new terms file is uploaded during contract update")
+  void shouldDeleteOldTermsFileOnUpdate() {
+    String oldFileKey = "contracts/123/old-terms.pdf";
+    String newFileKey = "contracts/123/new-terms.pdf";
+
+    Contract contract =
+        Contract.builder()
+            .employer(employer)
+            .employee(employee)
+            .job(job)
+            .title("Contract Title")
+            .agreedRate(new BigDecimal("20000000.00"))
+            .salaryType("MONTHLY")
+            .status(ContractStatus.PENDING)
+            .termsFileKey(oldFileKey)
+            .build();
+    contract.setId(UUID.randomUUID());
+
+    MockMultipartFile newFile =
+        new MockMultipartFile("file", "new-terms.pdf", "application/pdf", "new content".getBytes());
+
+    when(contractRepository.findById(contract.getId())).thenReturn(Optional.of(contract));
+    when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(storageService.uploadPrivateDocument(eq("contracts/" + contract.getId()), eq(newFile)))
+        .thenReturn(newFileKey);
+
+    ContractDetailResponse mockResponse =
+        ContractDetailResponse.builder().title("Contract Title").build();
+    when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
+
+    contractService.updateContract(contract.getId(), null, newFile, employerContext);
+
+    verify(storageService).deleteFile(oldFileKey);
+    verify(storageService).uploadPrivateDocument(eq("contracts/" + contract.getId()), eq(newFile));
+    assertThat(contract.getTermsFileKey()).isEqualTo(newFileKey);
   }
 
   @Test

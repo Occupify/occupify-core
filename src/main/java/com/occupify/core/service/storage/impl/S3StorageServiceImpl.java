@@ -82,8 +82,7 @@ public class S3StorageServiceImpl implements StorageService {
           properties.getBucketName(),
           objectKey,
           e);
-      throw new StorageException(
-          StorageErrorCode.UPLOAD_FAILED, "S3 upload failed: " + e.getMessage(), e);
+      throw new StorageException(StorageErrorCode.UPLOAD_FAILED, e);
     }
   }
 
@@ -115,10 +114,7 @@ public class S3StorageServiceImpl implements StorageService {
       return presignedGetObjectRequest.url().toString();
     } catch (Exception e) {
       log.error("Failed to generate presigned URL for key: {}", objectKey, e);
-      throw new StorageException(
-          StorageErrorCode.PRESIGN_FAILED,
-          "Failed to generate presigned URL: " + e.getMessage(),
-          e);
+      throw new StorageException(StorageErrorCode.PRESIGN_FAILED, e);
     }
   }
 
@@ -143,8 +139,7 @@ public class S3StorageServiceImpl implements StorageService {
           properties.getBucketName(),
           objectKey,
           e);
-      throw new StorageException(
-          StorageErrorCode.DELETE_FAILED, "Failed to delete file from S3: " + e.getMessage(), e);
+      throw new StorageException(StorageErrorCode.DELETE_FAILED, e);
     }
   }
 

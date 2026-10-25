@@ -46,7 +46,6 @@ public interface ContractMapper {
   @Mapping(target = "jobDescription", source = "contract.jobDescription")
   @Mapping(target = "status", source = "contract.status")
   @Mapping(target = "paymentStatus", source = "contract.paymentStatus")
-  @Mapping(target = "termsFileKey", source = "contract.termsFileKey")
   @Mapping(target = "termsFileUrl", source = "termsFileUrl")
   @Mapping(target = "cancellation", source = "cancellation")
   @Mapping(target = "startedAt", source = "contract.startedAt")

@@ -119,15 +119,19 @@ public class ContractServiceImpl implements ContractService {
 
     contract = contractRepository.save(contract);
 
-    Offer offer =
-        Offer.builder()
-            .contract(contract)
-            .freelancer(employee)
-            .proposedRate(request.agreedRate())
-            .offerMessage(request.invitationMessage())
-            .status(OfferStatus.PENDING)
-            .build();
-    offerRepository.save(offer);
+    if ("DIRECT_OFFER".equalsIgnoreCase(request.sourceType())) {
+      Offer offer =
+          Offer.builder()
+              .contract(contract)
+              .freelancer(employee)
+              .proposedRate(request.agreedRate())
+              .offerMessage(request.invitationMessage())
+              .status(OfferStatus.PENDING)
+              .build();
+      Offer savedOffer = offerRepository.save(offer);
+      contract.setSourceId(savedOffer.getId());
+      contract = contractRepository.save(contract);
+    }
 
     String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
     return contractMapper.toDetailResponse(contract, termsFileUrl, null);
@@ -156,6 +160,9 @@ public class ContractServiceImpl implements ContractService {
     }
 
     if (file != null && !file.isEmpty()) {
+      if (contract.getTermsFileKey() != null) {
+        storageService.deleteFile(contract.getTermsFileKey());
+      }
       String termsFileKey =
           storageService.uploadPrivateDocument("contracts/" + contract.getId(), file);
       contract.setTermsFileKey(termsFileKey);

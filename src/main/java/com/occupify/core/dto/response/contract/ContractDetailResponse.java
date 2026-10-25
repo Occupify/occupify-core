@@ -33,7 +33,6 @@ public class ContractDetailResponse {
   private String jobDescription;
   private ContractStatus status;
   private String paymentStatus;
-  private String termsFileKey;
   private String termsFileUrl;
   private CancellationContractResponse cancellation;
   private LocalDateTime startedAt;
