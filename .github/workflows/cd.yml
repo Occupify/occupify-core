@@ -96,7 +96,7 @@ jobs:
       - name: Sync Permanent Configs & Environment
         working-directory: gitops-manifests
         env:
-          CORE_ENV_CONTENT: ${{ secrets.CORE_ENV_FILE }}
+          SECRET_CORE_OCID: ${{ secrets.SECRET_CORE_OCID }}
         run: |
           mkdir -p ~/.config/systemd/user/git-ops/compose
           mkdir -p ~/.config/systemd/user/git-ops/env
@@ -105,8 +105,13 @@ jobs:
           mkdir -p ~/.config/systemd/user/git-ops/nginx/body
 
           echo "Inject core.env..."
-          printf "%s\n" "$CORE_ENV_CONTENT" > ~/.config/systemd/user/git-ops/env/core.env
-
+          oci secrets secret-bundle get \
+            --secret-id "$SECRET_CORE_OCID" \
+            --auth instance_principal \
+            --stage CURRENT \
+            --query 'data."secret-bundle-content".content' \
+            --raw-output | base64 --decode > ~/.config/systemd/user/git-ops/env/core.env
+            
           echo "Sync compose and service units..."
           cp compose/docker.*.compose.yml ~/.config/systemd/user/git-ops/compose/
           cp service/occupify-*.service ~/.config/systemd/user/
