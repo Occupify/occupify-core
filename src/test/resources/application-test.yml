@@ -18,3 +18,9 @@ app:
   auth:
     dev-mock:
       enabled: false
+  storage:
+    s3:
+      region: ap-singapore-1
+      bucket-name: test-bucket
+      path-style-access-enabled: true
+      presigned-duration-minutes: 15
