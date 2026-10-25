@@ -101,12 +101,14 @@ class ContractEntityTest {
         .contract(savedContract)
         .requestedByUser(employer)
         .reason("Freelancer không phản hồi thỏa thuận sau 7 ngày.")
+        .evidenceFileKey("cancellations/evidence-123.png")
         .status("ACCEPTED")
         .build();
 
     CancellationContract savedCancel = cancellationContractRepository.save(cancelReq);
     assertThat(savedCancel.getId()).isNotNull();
     assertThat(savedCancel.getReason()).contains("không phản hồi");
+    assertThat(savedCancel.getEvidenceFileKey()).isEqualTo("cancellations/evidence-123.png");
   }
 }
 ```
@@ -120,7 +122,7 @@ Expected: FAIL compilation with "cannot find symbol CancellationContract" or mis
 
 1. Write `src/main/resources/db/migration/V5__create_cancellation_contracts_and_alter_contracts.sql`:
    - `ALTER TABLE contracts ADD COLUMN title VARCHAR(255), ADD COLUMN terms_file_key VARCHAR(500), ADD COLUMN job_description TEXT, ADD COLUMN salary_due_date VARCHAR(100);`
-   - `CREATE TABLE IF NOT EXISTS cancellation_contracts (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE, requested_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, reason TEXT NOT NULL, status VARCHAR(50) NOT NULL DEFAULT 'ACCEPTED', created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP);`
+   - `CREATE TABLE IF NOT EXISTS cancellation_contracts (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE, requested_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, reason TEXT NOT NULL, evidence_file_key VARCHAR(500), status VARCHAR(50) NOT NULL DEFAULT 'ACCEPTED', created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP);`
    - Add indexes on `contract_id`, `requested_by_user_id`, `status`.
 2. Add corresponding table and columns into `src/main/resources/init-h2.sql`.
 3. Add fields to `Contract.java`:
@@ -129,7 +131,7 @@ Expected: FAIL compilation with "cannot find symbol CancellationContract" or mis
    - `private @Nullable String jobDescription;`
    - `private @Nullable String salaryDueDate;`
 4. Create `CancellationContract.java` in `src/main/java/com/occupify/core/entity/contract/`:
-   - Extends `AbstractBaseEntity`, `@ManyToOne Contract contract`, `@ManyToOne User requestedByUser`, `String reason`, `String status`.
+   - Extends `AbstractBaseEntity`, `@ManyToOne Contract contract`, `@ManyToOne User requestedByUser`, `String reason`, `String evidenceFileKey`, `String status`.
 5. Create `CancellationContractRepository.java` in `src/main/java/com/occupify/core/repository/contract/`:
    - `List<CancellationContract> findByContractIdOrderByCreatedAtDesc(UUID contractId);`
    - `Optional<CancellationContract> findFirstByContractIdOrderByCreatedAtDesc(UUID contractId);`
@@ -810,9 +812,9 @@ Create `ContractController.java` in `src/main/java/com/occupify/core/controller/
   - Returns `paging(contractService.getContracts(filter, pageable, userContext), MessageConstants.CONTRACT_LIST_RETRIEVED)`.
 - `@GetMapping(RouteConstants.CONTRACT_ID)`:
   - Returns `successSingle(contractService.getContractDetail(id, userContext), MessageConstants.CONTRACT_RETRIEVED)`.
-- `@PostMapping(RouteConstants.CONTRACT_CANCEL)`:
-  - `@Valid @RequestBody CancelContractRequest request`.
-  - Returns `successSingle(contractService.cancelContract(id, request, userContext), MessageConstants.CONTRACT_CANCELLED)`.
+- `@PostMapping(value = RouteConstants.CONTRACT_CANCEL, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})`:
+  - `@RequestPart(value = "data", required = false) @Valid CancelContractRequest requestPart`, `@RequestBody(required = false) CancelContractRequest body`, `@RequestPart(value = "file", required = false) MultipartFile evidenceFile`.
+  - Returns `successSingle(contractService.cancelContract(id, resolvedRequest, evidenceFile, userContext), MessageConstants.CONTRACT_CANCELLED)`.
 - `@PostMapping(RouteConstants.CONTRACT_ACCEPT)`:
   - Returns `successSingle(contractService.acceptContract(id, userContext), MessageConstants.CONTRACT_ACCEPTED)`.
 - `@PostMapping(RouteConstants.CONTRACT_COMPLETE)`:
