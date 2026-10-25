@@ -32,10 +32,12 @@ CREATE TABLE IF NOT EXISTS projects (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     start_price NUMERIC(12, 2),
-    period VARCHAR(50) CHECK (period IS NULL OR UPPER(period) IN ('FIXED', 'HOURLY', 'WEEKLY', 'MONTHLY')),
+    period VARCHAR(50) CHECK (period IS NULL OR UPPER(period) IN ('DAY', 'FIXED', 'HOURLY', 'WEEKLY', 'MONTHLY')),
     due_date DATE,
     experience_level VARCHAR(50) CHECK (experience_level IS NULL OR UPPER(experience_level) IN ('ENTRY', 'INTERMEDIATE', 'EXPERT')),
     status VARCHAR(50) NOT NULL DEFAULT 'OPEN' CHECK (UPPER(status) IN ('OPEN', 'CLOSED')),
+    start_date TIMESTAMP WITH TIME ZONE,
+    end_date TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     closed_at TIMESTAMP WITH TIME ZONE
@@ -82,7 +84,7 @@ CREATE TABLE IF NOT EXISTS bids (
     weekly_commitment_hours VARCHAR(50),
     message TEXT,
     attachment_cv_url VARCHAR(255),
-    portfolio_link VARCHAR(255),
+    portfolio_url VARCHAR(255),
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (UPPER(status) IN ('PENDING', 'ACCEPTED', 'REJECTED')),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -96,21 +98,23 @@ CREATE INDEX IF NOT EXISTS idx_bids_status ON bids(status);
 CREATE TABLE IF NOT EXISTS contracts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     job_id UUID NOT NULL REFERENCES job(id) ON DELETE CASCADE,
-    freelancer_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    budget NUMERIC(12, 2),
-    salary_type VARCHAR(50) CHECK (salary_type IS NULL OR UPPER(salary_type) IN ('FIXED', 'HOURLY', 'WEEKLY', 'MONTHLY')),
-    start_date DATE,
-    end_date DATE,
-    attachment_url VARCHAR(500),
+    employer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    employee_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    source_type VARCHAR(50),
+    source_id UUID,
+    agreed_rate NUMERIC(12, 2) NOT NULL,
+    salary_type VARCHAR(50) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (UPPER(status) IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
+    payment_status VARCHAR(50),
+    started_at TIMESTAMP WITH TIME ZONE,
+    finished_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_contracts_job_id ON contracts(job_id);
-CREATE INDEX IF NOT EXISTS idx_contracts_freelancer_id ON contracts(freelancer_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_employer_id ON contracts(employer_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_employee_id ON contracts(employee_id);
 CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts(status);
 
 -- 8. offers
@@ -152,7 +156,7 @@ CREATE TABLE IF NOT EXISTS reports (
     target_type VARCHAR(50) NOT NULL CHECK (UPPER(target_type) IN ('USER', 'PROJECT')),
     target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     target_project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-    reason_category VARCHAR(50) NOT NULL CHECK (UPPER(reason_category) IN ('FRAUD', 'OUTSIDE_PAYMENT', 'FAKE_INFORMATION', 'SPAM_HARASSMENT', 'OTHER')),
+    reason_category VARCHAR(50) NOT NULL CHECK (UPPER(reason_category) IN ('FRAUD', 'OUTSIDE_PAYMENT', 'FAKE_INFORMATION', 'SPAM', 'HARASSMENT', 'OTHER')),
     description TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (UPPER(status) IN ('PENDING', 'RESOLVED', 'DISMISSED')),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

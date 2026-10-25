@@ -25,7 +25,7 @@ class ReportTest {
             .targetType(ReportTargetType.USER)
             .targetUser(targetUser)
             .targetProject(targetProject)
-            .reasonCategory(ReportReasonCategory.SPAM_HARASSMENT)
+            .reasonCategory(ReportReasonCategory.SPAM)
             .description("Spam messages sent")
             .status(ReportStatus.PENDING)
             .build();
@@ -36,7 +36,7 @@ class ReportTest {
     assertEquals(ReportTargetType.USER, report.getTargetType());
     assertEquals(targetUser, report.getTargetUser());
     assertEquals(targetProject, report.getTargetProject());
-    assertEquals(ReportReasonCategory.SPAM_HARASSMENT, report.getReasonCategory());
+    assertEquals(ReportReasonCategory.SPAM, report.getReasonCategory());
     assertEquals("Spam messages sent", report.getDescription());
     assertEquals(ReportStatus.PENDING, report.getStatus());
   }

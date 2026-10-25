@@ -59,6 +59,12 @@ public class Project extends AbstractBaseEntity {
   @Column(name = "status", nullable = false, length = 50)
   private ProjectStatus status;
 
+  @Column(name = "start_date")
+  private LocalDateTime startDate;
+
+  @Column(name = "end_date")
+  private LocalDateTime endDate;
+
   @Column(name = "closed_at")
   private LocalDateTime closedAt;
 }

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record UpdateProjectRequest(
     @Size(max = 255, message = "Project title cannot exceed 255 characters") String title,
@@ -16,4 +17,6 @@ public record UpdateProjectRequest(
         BigDecimal startPrice,
     ProjectPeriod period,
     @FutureOrPresent(message = "Due date must be in the present or future") LocalDate dueDate,
-    ExperienceLevel experienceLevel) {}
+    ExperienceLevel experienceLevel,
+    LocalDateTime startDate,
+    LocalDateTime endDate) {}

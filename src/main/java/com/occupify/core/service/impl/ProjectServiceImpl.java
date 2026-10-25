@@ -8,7 +8,9 @@ import com.occupify.core.dto.response.ProjectDetailResponse;
 import com.occupify.core.dto.response.ProjectResponse;
 import com.occupify.core.entity.job.Job;
 import com.occupify.core.entity.project.Project;
+import com.occupify.core.entity.skill.Skill;
 import com.occupify.core.entity.user.User;
+import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.ProjectStatus;
 import com.occupify.core.event.ProjectClosedEvent;
 import com.occupify.core.event.ProjectCreatedEvent;
@@ -24,9 +26,14 @@ import com.occupify.core.repository.project.ProjectSpecification;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ProjectService;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -107,7 +114,71 @@ public class ProjectServiceImpl implements ProjectService {
     log.info("[ProjectService] Querying projects with filters: {}", filter);
     Specification<Project> spec = ProjectSpecification.withFilters(filter);
     Page<Project> page = projectRepository.findAll(spec, pageable);
-    return page.map(projectMapper::toResponse);
+
+    if (page.isEmpty()) {
+      return page.map(projectMapper::toResponse);
+    }
+
+    List<UUID> projectIds = page.getContent().stream().map(Project::getId).toList();
+    List<Job> recruitingJobs =
+        jobRepository.findWithSkillsByProjectIdInAndStatus(projectIds, JobStatus.RECRUITING);
+
+    Map<UUID, List<Job>> jobsByProjectId =
+        recruitingJobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
+
+    return page.map(
+        project -> {
+          ProjectResponse baseResponse = projectMapper.toResponse(project);
+          List<Job> projectJobs = jobsByProjectId.getOrDefault(project.getId(), List.of());
+
+          BigDecimal salaryMin = null;
+          BigDecimal salaryMax = null;
+          Set<String> skills = new HashSet<>();
+          int openJobsCount = projectJobs.size();
+
+          for (Job job : projectJobs) {
+            if (job.getBudgetMin() != null) {
+              salaryMin =
+                  (salaryMin == null) ? job.getBudgetMin() : salaryMin.min(job.getBudgetMin());
+            }
+            if (job.getBudgetMax() != null) {
+              salaryMax =
+                  (salaryMax == null) ? job.getBudgetMax() : salaryMax.max(job.getBudgetMax());
+            }
+            if (job.getSkills() != null) {
+              for (Skill s : job.getSkills()) {
+                skills.add(s.getName());
+              }
+            }
+          }
+
+          if (salaryMin == null) {
+            salaryMin = project.getStartPrice();
+          }
+          if (salaryMax == null) {
+            salaryMax = project.getStartPrice();
+          }
+
+          return new ProjectResponse(
+              baseResponse.id(),
+              baseResponse.title(),
+              baseResponse.description(),
+              baseResponse.startPrice(),
+              baseResponse.period(),
+              baseResponse.dueDate(),
+              baseResponse.experienceLevel(),
+              baseResponse.status(),
+              baseResponse.startDate(),
+              baseResponse.endDate(),
+              baseResponse.closedAt(),
+              baseResponse.employer(),
+              salaryMin,
+              salaryMax,
+              skills,
+              openJobsCount,
+              baseResponse.createdAt(),
+              baseResponse.updatedAt());
+        });
   }
 
   @Override
