@@ -10,6 +10,7 @@ import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.ContractFilterRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
+import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.CancellationContractResponse;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
@@ -500,6 +501,43 @@ class ContractServiceTest {
     assertThat(contract.getStartedAt()).isNotNull();
     assertThat(pendingOffer.getStatus()).isEqualTo(OfferStatus.ACCEPTED);
     verify(offerRepository).save(pendingOffer);
+  }
+
+  @Test
+  @DisplayName("Should reject contract, set CANCELLED, reject offer, and save cancellation")
+  void shouldRejectContract() {
+    Contract contract =
+        Contract.builder()
+            .employer(employer)
+            .employee(employee)
+            .job(job)
+            .status(ContractStatus.PENDING)
+            .build();
+    UUID contractId = UUID.randomUUID();
+    contract.setId(contractId);
+
+    Offer pendingOffer =
+        Offer.builder().contract(contract).freelancer(employee).status(OfferStatus.PENDING).build();
+
+    when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
+    when(offerRepository.findByContractId(contractId)).thenReturn(List.of(pendingOffer));
+    when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    ContractDetailResponse mockResponse =
+        ContractDetailResponse.builder().status(ContractStatus.CANCELLED).build();
+    when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
+
+    RejectContractRequest rejectReq =
+        RejectContractRequest.builder().reason("Thù lao chưa phù hợp").build();
+
+    ContractDetailResponse response =
+        contractService.rejectContract(contractId, rejectReq, employeeContext);
+
+    assertThat(response.getStatus()).isEqualTo(ContractStatus.CANCELLED);
+    assertThat(contract.getStatus()).isEqualTo(ContractStatus.CANCELLED);
+    assertThat(pendingOffer.getStatus()).isEqualTo(OfferStatus.REJECTED);
+    verify(offerRepository).save(pendingOffer);
+    verify(cancellationContractRepository).save(any(CancellationContract.class));
   }
 
   @Test

@@ -15,6 +15,7 @@ import com.occupify.core.constant.RouteConstants;
 import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
+import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
 import com.occupify.core.dto.response.contract.ContractSummaryResponse;
@@ -264,6 +265,30 @@ class ContractControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_ACCEPTED))
         .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"));
+  }
+
+  @Test
+  @DisplayName("POST /contracts/{id}/reject should reject contract")
+  void shouldRejectContract() throws Exception {
+    UUID contractId = UUID.randomUUID();
+    RejectContractRequest rejectReq =
+        RejectContractRequest.builder().reason("Mức thù lao chưa phù hợp").build();
+
+    ContractDetailResponse response =
+        ContractDetailResponse.builder().id(contractId).status(ContractStatus.CANCELLED).build();
+
+    when(contractService.rejectContract(eq(contractId), any(), any())).thenReturn(response);
+
+    mockMvc
+        .perform(
+            post(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_REJECT, contractId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(rejectReq))
+                .header("X-User-Id", userId.toString())
+                .header("X-User-Role", "USER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_REJECTED))
+        .andExpect(jsonPath("$.data.status").value("CANCELLED"));
   }
 
   @Test

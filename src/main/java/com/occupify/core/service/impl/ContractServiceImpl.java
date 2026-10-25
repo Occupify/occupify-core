@@ -4,6 +4,7 @@ import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.ContractFilterRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
+import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.CancellationContractResponse;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
@@ -293,6 +294,49 @@ public class ContractServiceImpl implements ContractService {
   }
 
   @Override
+  public ContractDetailResponse rejectContract(
+      UUID id, RejectContractRequest request, UserContext userContext) {
+    log.info("[ContractService] Rejecting contract: id={}, user={}", id, userContext.userId());
+
+    Contract contract =
+        contractRepository
+            .findById(id)
+            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+
+    if (contract.getEmployee() == null
+        || !contract.getEmployee().getId().equals(userContext.userId())) {
+      throw new ContractException(ContractErrorCode.FORBIDDEN_CONTRACT_ACCESS);
+    }
+
+    validateStatusForAcceptance(contract.getStatus());
+
+    contract.setStatus(ContractStatus.CANCELLED);
+    contract = contractRepository.save(contract);
+
+    rejectPendingOffers(contract.getId());
+
+    String reason =
+        (request != null && request.reason() != null && !request.reason().isBlank())
+            ? request.reason().trim()
+            : "Ứng viên từ chối đề nghị hợp đồng";
+
+    CancellationContract cancellation =
+        CancellationContract.builder()
+            .contract(contract)
+            .requestedByUser(contract.getEmployee())
+            .reason(reason)
+            .status("ACCEPTED")
+            .build();
+    cancellation = cancellationContractRepository.save(cancellation);
+
+    String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
+    CancellationContractResponse cancellationResponse =
+        contractMapper.toCancellationResponse(cancellation, null);
+
+    return contractMapper.toDetailResponse(contract, termsFileUrl, cancellationResponse);
+  }
+
+  @Override
   public ContractDetailResponse completeContract(
       UUID id, CompleteContractRequest request, UserContext userContext) {
     log.info("[ContractService] Completing contract: id={}, user={}", id, userContext.userId());
@@ -437,6 +481,16 @@ public class ContractServiceImpl implements ContractService {
     for (Offer offer : offers) {
       if (offer.getStatus() == OfferStatus.PENDING) {
         offer.setStatus(OfferStatus.ACCEPTED);
+        offerRepository.save(offer);
+      }
+    }
+  }
+
+  private void rejectPendingOffers(UUID contractId) {
+    List<Offer> offers = offerRepository.findByContractId(contractId);
+    for (Offer offer : offers) {
+      if (offer.getStatus() == OfferStatus.PENDING) {
+        offer.setStatus(OfferStatus.REJECTED);
         offerRepository.save(offer);
       }
     }

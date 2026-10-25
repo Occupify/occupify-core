@@ -9,6 +9,7 @@ import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.ContractFilterRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
+import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
 import com.occupify.core.dto.response.contract.ContractSummaryResponse;
@@ -138,6 +139,19 @@ public class ContractController extends AbstractBaseController {
       @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
     ContractDetailResponse response = contractService.acceptContract(id, userContext);
     return successSingle(response, MessageConstants.CONTRACT_ACCEPTED);
+  }
+
+  @PostMapping(RouteConstants.CONTRACT_REJECT)
+  @Operation(
+      summary = "Reject a contract offer",
+      description =
+          "Rejects a pending contract offer by the freelancer/employee with optional reason")
+  public ResponseEntity<SingleResponse<ContractDetailResponse>> rejectContract(
+      @PathVariable UUID id,
+      @Valid @RequestBody(required = false) RejectContractRequest request,
+      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.rejectContract(id, request, userContext);
+    return successSingle(response, MessageConstants.CONTRACT_REJECTED);
   }
 
   @PostMapping(RouteConstants.CONTRACT_COMPLETE)
