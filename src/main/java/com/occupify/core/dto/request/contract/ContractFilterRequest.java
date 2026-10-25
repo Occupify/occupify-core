@@ -5,7 +5,4 @@ import java.util.UUID;
 import lombok.Builder;
 
 @Builder
-public record ContractFilterRequest(
-    UUID projectId,
-    UUID jobId,
-    ContractStatus status) {}
+public record ContractFilterRequest(UUID projectId, UUID jobId, ContractStatus status) {}

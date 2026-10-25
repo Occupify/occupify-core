@@ -12,8 +12,7 @@ public record UpdateContractRequest(
     @DecimalMin(value = "0.0", inclusive = false, message = "Agreed rate must be greater than 0")
         BigDecimal agreedRate,
     @Size(max = 50, message = "Salary type cannot exceed 50 characters") String salaryType,
-    @Size(max = 100, message = "Salary due date cannot exceed 100 characters")
-        String salaryDueDate,
+    @Size(max = 100, message = "Salary due date cannot exceed 100 characters") String salaryDueDate,
     LocalDateTime startedAt,
     LocalDateTime finishedAt,
     String jobDescription) {}
