@@ -7,7 +7,7 @@
 - **Reference Implementation:** `occupify-identity` (`com.occupify.identity.service.storage.impl.S3StorageServiceImpl`)
 - **Author:** Antigravity / Gem
 - **Date:** 2026-10-25
-- **Status:** DRAFT (Reviewed & Updated with Builder Invariants)
+- **Status:** APPROVED DRAFT
 
 ---
 
@@ -15,16 +15,26 @@
 
 ### 1.1. The "Why"
 Occupify connects employers/recruiters with freelancers. Currently, recruiters can post projects, create job roles, and receive bids from applicants. However, recruiters have no backend mechanism to:
-1. Formally establish an employment contract (`Contract`) with a candidate from a job role or an accepted bid.
+1. Formally establish an employment contract (`Contract`) with a candidate either from an existing bid (`JOB_BID`) or via a direct invitation (`DIRECT_OFFER`).
 2. Directly attach/upload private agreement terms documents (`.pdf`, `.docx`) upon contract creation or modification.
 3. Review, modify, cancel, or complete contracts with reason tracking and rating feedback.
 
 In `occupify-web`, these interactions exist as UI prototypes with in-memory mocks. Task `OC-76` implements the complete backend lifecycle for contracts, synchronizes database schemas with architecture docs, and delivers private document storage using **Oracle Cloud Infrastructure (OCI) Object Storage** with **S3 Presigned URLs**.
 
 ### 1.2. Direct User Decisions
+- **No System Template Fallback:** If the recruiter does not attach a terms file, `terms_file_key` is simply `NULL`. No default template file is attached.
+- **Clear Distinction between Bid and Offer Sources:**
+  - **Path A — From Job Application (`source_type = 'JOB_BID'`):** Candidate already applied via a `Bid`. When the recruiter accepts and creates a contract, `bids.status` transitions from `pending` $\rightarrow$ `accepted`. No redundant `Offer` record is created.
+  - **Path B — Direct Invitation (`source_type = 'DIRECT_OFFER'`):** Recruiter directly invites a freelancer who hasn't applied. Creates a contract and an associated `Offer` record (`status = 'PENDING'`). Candidate accepts/declines via this offer.
+- **Strict Cancellation Authority Matrix:**
+  - `PENDING`: Recruiter has the unilateral right to cancel/withdraw anytime.
+  - `IN_PROGRESS`: Recruiter has the right to cancel, but MUST provide a valid reason ($\ge 10$ chars) stored in `cancellation_contracts`.
+  - `COMPLETED`: Recruiter CANNOT cancel (`400 BAD_REQUEST: CONTRACT_ALREADY_COMPLETED`).
+  - `CANCELLED`: Already cancelled (`400 BAD_REQUEST: CONTRACT_ALREADY_CANCELLED`).
+  - Ownership: Only the contract's employer (or employee, or admin) can request cancellation. Unauthorized users receive `403 FORBIDDEN`.
 - **Cloud Storage:** Use Oracle Cloud Infrastructure (OCI) Object Storage via S3-compatible API, adopting the pattern and dependencies (`software.amazon.awssdk:s3:2.25.40`) from `occupify-identity`.
-- **Private Legal Documents:** Contract terms are confidential documents, NOT public assets like avatars. They MUST NOT have permanent public URLs. Backend stores the private **S3 Object Key** in the database (`terms_file_key`) and generates temporary **Presigned GET URLs** (TTL: 15 minutes) only for authenticated parties to the contract.
-- **Direct Multipart Attachment:** File upload MUST NOT be a detached endpoint. The terms file is attached directly during contract creation (`POST /api/v1/contracts`) or update (`PUT /api/v1/contracts/{id}`) via `multipart/form-data`.
+- **Private Legal Documents:** Contract terms are confidential documents, NOT public assets. The database stores the private **S3 Object Key** (`terms_file_key`). The backend generates temporary **Presigned GET URLs** (TTL: 15 minutes) only for authenticated parties to the contract.
+- **Direct Multipart Attachment:** The terms file is attached directly during contract creation (`POST /api/v1/contracts`) or update (`PUT /api/v1/contracts/{id}`) via `multipart/form-data`.
 - **ERD & Code Sync:** The database schema (`contracts`, `cancellation_contracts`) and documentation (`docs/CORE-ERD.md`, `docs/ECOSYSTEM-ERD.md`) MUST be updated and synchronized simultaneously.
 
 ---
@@ -33,29 +43,29 @@ In `occupify-web`, these interactions exist as UI prototypes with in-memory mock
 
 ### 2.1. Goals
 1. **Schema & Doc Synchronization:**
-   - Add missing columns to `contracts`: `title VARCHAR(255)`, `terms_file_key VARCHAR(500)`, `job_description TEXT`, `salary_due_date VARCHAR(100)`.
+   - Add missing columns to `contracts`: `title VARCHAR(255)`, `terms_file_key VARCHAR(500) NULL`, `job_description TEXT`, `salary_due_date VARCHAR(100)`.
    - Create table `cancellation_contracts` with constraints and foreign keys (`contract_id`, `requested_by_user_id`, `reason`, `status`).
    - Synchronize `docs/CORE-ERD.md` and `docs/ECOSYSTEM-ERD.md`.
 2. **Oracle S3 Storage & Presigner Integration:**
    - Add `software.amazon.awssdk:s3:2.25.40` dependency to `pom.xml`.
-   - Implement `S3Properties` and `S3Config` supporting OCI Object Storage auto-derived endpoints (`https://{namespace}.compat.objectstorage.{region}.oraclecloud.com`), credentials, and path-style access.
+   - Implement `S3Properties` and `S3Config` supporting OCI Object Storage auto-derived endpoints, credentials, and path-style access.
    - Configure `S3Client` for private upload (`putObject`) and `S3Presigner` for time-limited signed URLs (`presignGetObject` with 15-minute TTL).
    - Create `StorageService` interface handling `uploadPrivateDocument(directory, file)` and `generatePresignedDownloadUrl(objectKey, duration)`.
-   - Provide default system terms template key fallback (`templates/DieuKhoan_HopDong_Mau.pdf`) when no custom file is uploaded.
-3. **Recruiter Contract RESTful API:**
-   - `POST /api/v1/contracts` (`multipart/form-data`): Create contract, upload terms to S3 (or fallback to template), cascade update referenced Bid to `ACCEPTED`, generate corresponding `Offer`, return response with presigned terms URL.
+3. **Contract RESTful API:**
+   - `POST /api/v1/contracts` (`multipart/form-data`): Create contract, handle optional file upload, handle `JOB_BID` vs `DIRECT_OFFER` logic, return response with presigned terms URL (if file exists).
    - `GET /api/v1/contracts`: Paginated list of contracts strictly scoped to current user (`employer_id == currentUser` or `employee_id == currentUser`, unless Admin), with filters (`projectId`, `jobId`, `status`).
    - `GET /api/v1/contracts/{id}`: Detailed contract response including employer, employee, job, project, and fresh presigned terms download URL.
    - `PUT /api/v1/contracts/{id}` (`multipart/form-data`): Edit contract details and optional terms file replacement (STRICT: allowed ONLY when `status == PENDING`).
-   - `POST /api/v1/contracts/{id}/cancel`: Cancel contract unilaterally with required reason ($\ge 10$ chars), insert row into `cancellation_contracts` (`status = 'ACCEPTED'`), update status to `CANCELLED`, cascade `Offer.status = 'EXPIRED'`.
-   - `POST /api/v1/contracts/{id}/accept`: Endpoint for candidate to accept the contract/offer, transitioning status from `PENDING` to `IN_PROGRESS` and setting `started_at = CURRENT_TIMESTAMP`.
-   - `POST /api/v1/contracts/{id}/complete`: Complete contract upon deliverable acceptance with 1-5 star rating and review.
+   - `POST /api/v1/contracts/{id}/cancel`: Cancel contract based on the cancellation matrix with required reason ($\ge 10$ chars), insert row into `cancellation_contracts` (`status = 'ACCEPTED'`), update status to `CANCELLED`.
+   - `POST /api/v1/contracts/{id}/accept`: Candidate accepts the contract, transitioning status from `PENDING` to `IN_PROGRESS` and setting `started_at = CURRENT_TIMESTAMP`.
+   - `POST /api/v1/contracts/{id}/complete`: Recruiter completes contract upon deliverable acceptance with 1-5 star rating and review.
 
 ### 2.2. Non-Goals
-- **Payment Escrow & Wallet Integration:** Payment ledger and wallet balance locks belong to `occupify-payment`. Contract status reflects `payment_status` locally without driving monetary transactions.
-- **Hard Deleting Contracts:** Contracts must never be deleted with SQL `DELETE`. Once created, they transition through state changes.
+- **Payment Escrow & Wallet Integration:** Payment ledger and wallet balance locks belong to `occupify-payment`. Contract status reflects `payment_status` locally.
+- **Hard Deleting Contracts:** Contracts must never be deleted with SQL `DELETE`.
 
 ### 2.3. Anti-Goals
+- **No System Template Fallback:** Do not inject system fallback files if recruiter uploaded nothing.
 - **Permanent Public URLs for Contracts:** Never expose public URLs for confidential contract files.
 - **Separate Standalone Upload Endpoint:** Rejecting detached upload endpoints. File attachment is atomic with contract payload.
 - **Unrestricted In-Progress Editing:** Never allow arbitrary rate/deadline modifications when status is `IN_PROGRESS`.
@@ -68,27 +78,41 @@ In `occupify-web`, these interactions exist as UI prototypes with in-memory mock
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING: Recruiter creates contract & uploads terms file to OCI S3
-    PENDING --> IN_PROGRESS: Candidate accepts contract (POST /accept) / Escrow funded
-    PENDING --> CANCELLED: Recruiter cancels (POST /cancel)
+    [*] --> PENDING: Recruiter creates contract (from Bid or Direct Offer)
+    PENDING --> IN_PROGRESS: Candidate accepts contract (POST /accept)
+    PENDING --> CANCELLED: Recruiter withdraws/cancels (POST /cancel)
     IN_PROGRESS --> COMPLETED: Recruiter accepts deliverables & rates freelancer (POST /complete)
-    IN_PROGRESS --> CANCELLED: Recruiter or Freelancer cancels with reason (POST /cancel)
+    IN_PROGRESS --> CANCELLED: Recruiter cancels with reason (POST /cancel)
     COMPLETED --> [*]
     CANCELLED --> [*]
 ```
 
-### 3.2. Business Invariants
-1. **Role Binding:** Every contract MUST bind to a valid `job_id` (`NOT NULL`).
-2. **Candidate Assignment & Cascades:**
-   - If `employeeId` is provided: Must be an existing active user in `users`.
-   - If `freelancerEmail` is provided without ID: Resolve user by email; if user does not exist, reject with `USER_NOT_FOUND`.
-   - If `sourceType == 'JOB_BID'`: Validate that `sourceId` refers to an existing `bids` record belonging to the same `job_id`, and automatically set `bids.status = 'ACCEPTED'`.
-   - Automatically insert an associated `offers` record with `proposed_rate = agreedRate`, `status = 'PENDING'`.
-3. **Private Security & Authorization:**
-   - Generating a presigned download URL for a contract terms file requires that the requesting user is the Employer, the Employee, or an ADMIN.
-   - Presigned URLs expire after 15 minutes.
-4. **Edit Lock:** Once a contract is `IN_PROGRESS`, `COMPLETED`, or `CANCELLED`, updating agreed rate, salary type, or dates via `PUT /contracts/{id}` is forbidden (`CONTRACT_ALREADY_ACTIVE`).
-5. **Cancellation Record:** Cancelling a contract requires `reason` ($\ge 10$ characters), records a row in `cancellation_contracts` with `status = 'ACCEPTED'`, and updates `contracts.status = CANCELLED`.
+### 3.2. Two Creation Paths (Bid vs Offer)
+
+```mermaid
+flowchart TD
+    Start([Recruiter initiates contract creation]) --> Choice{Source Type?}
+    
+    Choice -->|From Bid: JOB_BID| BidFlow[1. Link source_id = bid.id<br/>2. Update bid.status = 'ACCEPTED'<br/>3. Employee = bid.freelancer_id]
+    Choice -->|Direct Invite: DIRECT_OFFER| OfferFlow[1. Create Offer record with status = 'PENDING'<br/>2. Link contract.source_id = offer.id<br/>3. Employee = resolved freelancer_id]
+    
+    BidFlow --> CreateContract[Create Contract with status = 'PENDING']
+    OfferFlow --> CreateContract
+    CreateContract --> FileCheck{File uploaded?}
+    FileCheck -->|Yes| S3Upload[Upload to OCI S3 -> save terms_file_key]
+    FileCheck -->|No| NoFile[terms_file_key = NULL]
+    S3Upload --> Finish([Contract Created])
+    NoFile --> Finish
+```
+
+### 3.3. Cancellation Authority Matrix
+
+| Current Contract Status | Can Recruiter Cancel? | Conditions & Side Effects |
+|---|---|---|
+| **`PENDING`** | **YES** | Unilateral withdrawal. Optional/brief reason. Updates `contracts.status = CANCELLED`. If `DIRECT_OFFER`, sets `offers.status = EXPIRED`. |
+| **`IN_PROGRESS`** | **YES** | Permitted, but MUST provide a detailed reason ($\ge 10$ chars). Creates row in `cancellation_contracts` with `status = 'ACCEPTED'` for audit trail. Updates `contracts.status = CANCELLED`. |
+| **`COMPLETED`** | **NO** | Forbidden (`400 BAD_REQUEST: CONTRACT_ALREADY_COMPLETED`). Work has concluded and deliverables accepted. |
+| **`CANCELLED`** | **NO** | Forbidden (`400 BAD_REQUEST: CONTRACT_ALREADY_CANCELLED`). |
 
 ---
 
@@ -96,18 +120,13 @@ stateDiagram-v2
 
 ### 4.1. Oracle S3 Storage Service Architecture
 
-Adopted directly from `occupify-identity`'s `S3Config` and `S3StorageServiceImpl`:
-
 ```
 [Create / Update Contract Request (multipart/form-data)]
                      │
                      ▼
              [ContractService]
                      │
-         Upload terms file (PutObject)
-                     │
-                     ▼
-             [StorageService]
+      If file attached -> uploadPrivateDocument(file)
                      │
                      ▼
        [Oracle OCI S3-Compatible Bucket]
@@ -123,13 +142,13 @@ When contract details are queried (`GET /api/v1/contracts/{id}`):
                      ▼
              [ContractService]
                      │
-          Generate Presigned GET URL (TTL: 15m)
+          If terms_file_key != null -> Generate Presigned GET URL (TTL: 15m)
                      │
                      ▼
              [S3Presigner] ───> Returns signed temporary URL
                      │
                      ▼
-  Response DTO includes `termsFileUrl` = "https://{namespace}.compat.objectstorage...&X-Amz-Signature=..."
+  Response DTO includes `termsFileUrl` (null if no file was uploaded)
 ```
 
 **Interface Definition:**
@@ -138,7 +157,6 @@ public interface StorageService {
   String uploadPrivateDocument(String directory, MultipartFile file);
   String generatePresignedDownloadUrl(String objectKey, Duration duration);
   void deleteFile(String objectKey);
-  String getDefaultTermsKey();
 }
 ```
 
@@ -154,7 +172,6 @@ app:
       access-key: ${S3_ACCESS_KEY:}
       secret-key: ${S3_SECRET_KEY:}
       path-style-access-enabled: ${S3_PATH_STYLE_ACCESS_ENABLED:true}
-      default-terms-key: ${S3_DEFAULT_TERMS_KEY:templates/DieuKhoan_HopDong_Mau.pdf}
       presigned-url-duration-minutes: ${S3_PRESIGNED_DURATION_MINUTES:15}
 ```
 
@@ -213,7 +230,7 @@ CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_status ON cancellation_con
     "invitationMessage": "Chào bạn, chúng tôi gửi dự thảo hợp đồng..."
   }
   ```
-- **Response:** `ApiResponse<ContractDetailResponse>` (`201 CREATED`). `termsFileUrl` in response contains the freshly generated Presigned GET URL.
+- **Response:** `ApiResponse<ContractDetailResponse>` (`201 CREATED`). If file was attached, `termsFileUrl` contains the freshly generated Presigned GET URL (15-min TTL); otherwise `termsFileUrl` is `null`.
 
 #### Endpoint 2: Get Contract List (`GET /api/v1/contracts`)
 - **Query Params:** `projectId`, `jobId`, `status`, `page` (default 0), `size` (default 10), `sort` (default `createdAt,desc`).
@@ -222,13 +239,7 @@ CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_status ON cancellation_con
 
 #### Endpoint 3: Get Contract Detail (`GET /api/v1/contracts/{id}`)
 - **Authorization:** Only the contract's employer, employee, or Admin can access.
-- **Response:** `ApiResponse<ContractDetailResponse>` (`200 OK`).
-  Includes:
-  - Contract fields (id, title, agreedRate, salaryType, status, dates, `termsFileUrl` with valid 15-minute Presigned URL).
-  - Employer summary (id, fullName, email, avatarUrl).
-  - Employee summary (id, fullName, email, avatarUrl).
-  - Job & Project summary (jobId, jobTitle, projectId, projectName).
-  - Latest cancellation request (if any).
+- **Response:** `ApiResponse<ContractDetailResponse>` (`200 OK`). Includes fresh 15-minute Presigned URL if `terms_file_key != null`.
 
 #### Endpoint 4: Update Contract (`PUT /api/v1/contracts/{id}`)
 - **Content-Type:** `multipart/form-data`
@@ -247,9 +258,10 @@ CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_status ON cancellation_con
   }
   ```
 - **Behavior:**
+  - Validates cancellation matrix (disallows cancellation if `COMPLETED` or `CANCELLED`).
   - Inserts row into `cancellation_contracts` with `status = 'ACCEPTED'`.
   - Sets `contracts.status = 'CANCELLED'`.
-  - Cascades `offers.status = 'EXPIRED'`.
+  - If `sourceType == 'DIRECT_OFFER'`, cascades `offers.status = 'EXPIRED'`.
 - **Response:** `ApiResponse<ContractDetailResponse>` (`200 OK`).
 
 #### Endpoint 6: Candidate Accept Contract (`POST /api/v1/contracts/{id}/accept`)
@@ -257,7 +269,7 @@ CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_status ON cancellation_con
 - **Behavior:**
   - Sets `contracts.status = 'IN_PROGRESS'`.
   - Sets `contracts.started_at = CURRENT_TIMESTAMP`.
-  - Sets `offers.status = 'ACCEPTED'`.
+  - If `sourceType == 'DIRECT_OFFER'`, sets `offers.status = 'ACCEPTED'`.
 - **Response:** `ApiResponse<ContractDetailResponse>` (`200 OK`).
 
 #### Endpoint 7: Complete Contract (`POST /api/v1/contracts/{id}/complete`)
@@ -287,7 +299,8 @@ CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_status ON cancellation_con
 | `CONTRACT_003` | 400 BAD_REQUEST | Contract job does not belong to the employer's project. |
 | `CONTRACT_004` | 400 BAD_REQUEST | Freelancer user not found with provided ID or email. |
 | `CONTRACT_005` | 400 BAD_REQUEST | Cancellation reason is required (min 10 characters). |
-| `CONTRACT_006` | 400 BAD_REQUEST | Contract already completed or cancelled. |
+| `CONTRACT_006` | 400 BAD_REQUEST | Contract already completed (`CONTRACT_ALREADY_COMPLETED`). |
+| `CONTRACT_007` | 400 BAD_REQUEST | Contract already cancelled (`CONTRACT_ALREADY_CANCELLED`). |
 | `STORAGE_001`  | 400 BAD_REQUEST | Invalid file type. Allowed: PDF, DOC, DOCX, PNG, JPG. |
 | `STORAGE_002`  | 400 BAD_REQUEST | File size exceeds limit (10MB). |
 | `STORAGE_003`  | 500 INTERNAL_ERROR | Failed to upload or presign object on Oracle S3. |
