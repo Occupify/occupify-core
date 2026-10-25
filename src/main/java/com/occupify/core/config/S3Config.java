@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @RequiredArgsConstructor
 public class S3Config {
 
+  private static final String DEFAULT_REGION = "ap-singapore-1";
   private final S3Properties properties;
 
   @Bean
@@ -76,7 +77,7 @@ public class S3Config {
     if (properties.getRegion() != null && !properties.getRegion().isBlank()) {
       return Region.of(properties.getRegion().trim());
     }
-    return Region.AP_SOUTHEAST_1;
+    return Region.of(DEFAULT_REGION);
   }
 
   private AwsCredentialsProvider resolveCredentialsProvider() {
@@ -100,10 +101,7 @@ public class S3Config {
       return URI.create(properties.getEndpoint().trim());
     }
     if (properties.getBucketNamespace() != null && !properties.getBucketNamespace().isBlank()) {
-      String region =
-          properties.getRegion() != null && !properties.getRegion().isBlank()
-              ? properties.getRegion().trim()
-              : "ap-singapore-1";
+      String region = resolveRegion().id();
       String derivedEndpoint =
           String.format(
               "https://%s.compat.objectstorage.%s.oraclecloud.com",

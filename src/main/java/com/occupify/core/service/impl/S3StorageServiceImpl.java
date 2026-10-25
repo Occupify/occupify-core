@@ -1,9 +1,9 @@
-package com.occupify.core.service.storage.impl;
+package com.occupify.core.service.impl;
 
 import com.occupify.core.config.S3Properties;
 import com.occupify.core.exception.storage.StorageErrorCode;
 import com.occupify.core.exception.storage.StorageException;
-import com.occupify.core.service.storage.StorageService;
+import com.occupify.core.service.StorageService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;

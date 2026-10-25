@@ -1,4 +1,4 @@
-package com.occupify.core.service.storage;
+package com.occupify.core.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import com.occupify.core.config.S3Properties;
 import com.occupify.core.exception.storage.StorageErrorCode;
 import com.occupify.core.exception.storage.StorageException;
-import com.occupify.core.service.storage.impl.S3StorageServiceImpl;
+import com.occupify.core.service.impl.S3StorageServiceImpl;
 import java.net.URL;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;

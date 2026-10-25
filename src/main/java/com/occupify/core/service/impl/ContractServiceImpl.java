@@ -31,7 +31,7 @@ import com.occupify.core.repository.review.ReviewRepository;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ContractService;
-import com.occupify.core.service.storage.StorageService;
+import com.occupify.core.service.StorageService;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;

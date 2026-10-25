@@ -12,12 +12,12 @@ import org.springframework.context.annotation.Configuration;
 public class S3Properties {
 
   private String bucketNamespace;
-  private String region = "ap-singapore-1";
+  private String region;
   private String endpoint;
-  private String bucketName = "occupify-storage";
+  private String bucketName;
   private String accessKey;
   private String secretKey;
   private String publicUrlPrefix;
-  private boolean pathStyleAccessEnabled = true;
-  private long presignedDurationMinutes = 15;
+  private boolean pathStyleAccessEnabled;
+  private long presignedDurationMinutes;
 }

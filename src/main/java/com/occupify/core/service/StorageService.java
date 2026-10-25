@@ -1,4 +1,4 @@
-package com.occupify.core.service.storage;
+package com.occupify.core.service;
 
 import java.time.Duration;
 import org.springframework.web.multipart.MultipartFile;
