@@ -117,6 +117,27 @@ jobs:
           cp service/occupify-*.service ~/.config/systemd/user/
           cp nginx/default.conf ~/.config/systemd/user/git-ops/nginx/default.conf
 
+      - name: Prune Old OCI Secret Versions
+        env:
+          SECRET_CORE_OCID: ${{ secrets.SECRET_CORE_OCID }}
+        run: |
+          DELETION_TIME=$(date -u -d "+1 day 5 minutes" +"%Y-%m-%dT%H:%M:%SZ")
+
+          oci vault secret-version list \
+            --secret-id "$SECRET_CORE_OCID" \
+            --auth instance_principal \
+            --raw-output | \
+            jq -r '.data | map(select(."time-of-deletion" == null)) | .[3:][]."version-number"' | \
+            while read -r VER; do
+              [ -z "$VER" ] && continue
+              echo "Scheduling deletion for Version $VER at $DELETION_TIME..."
+              oci vault secret-version schedule-deletion \
+                --secret-id "$SECRET_CORE_OCID" \
+                --secret-version-number "$VER" \
+                --time-of-deletion "$DELETION_TIME" \
+                --auth instance_principal
+            done
+            
       - name: Deploy Core Service
         working-directory: gitops-manifests
         env:
