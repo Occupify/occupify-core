@@ -35,6 +35,10 @@ class ContractTest {
             .paymentStatus("ESCROWED")
             .startedAt(startedAt)
             .finishedAt(finishedAt)
+            .title("Contract Dev")
+            .termsFileKey("contracts/dev.pdf")
+            .jobDescription("Job description text")
+            .salaryDueDate("5th of month")
             .build();
     contract.setId(id);
 
@@ -50,5 +54,9 @@ class ContractTest {
     assertEquals("ESCROWED", contract.getPaymentStatus());
     assertEquals(startedAt, contract.getStartedAt());
     assertEquals(finishedAt, contract.getFinishedAt());
+    assertEquals("Contract Dev", contract.getTitle());
+    assertEquals("contracts/dev.pdf", contract.getTermsFileKey());
+    assertEquals("Job description text", contract.getJobDescription());
+    assertEquals("5th of month", contract.getSalaryDueDate());
   }
 }

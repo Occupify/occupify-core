@@ -43,6 +43,18 @@ public class Contract extends AbstractBaseEntity {
   @JoinColumn(name = "employee_id")
   private @Nullable User employee;
 
+  @Column(name = "title", length = 255)
+  private @Nullable String title;
+
+  @Column(name = "terms_file_key", length = 500)
+  private @Nullable String termsFileKey;
+
+  @Column(name = "job_description", columnDefinition = "TEXT")
+  private @Nullable String jobDescription;
+
+  @Column(name = "salary_due_date", length = 100)
+  private @Nullable String salaryDueDate;
+
   @Column(name = "source_type", length = 50)
   private @Nullable String sourceType;
 

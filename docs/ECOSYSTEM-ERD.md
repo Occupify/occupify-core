@@ -81,9 +81,9 @@ flowchart TB
         JOBS["<b>job</b><br/>• id (PK)<br/>• project_id (FK -> projects.id)<br/>• title, salary_type, budget_min/max<br/>• quantity, status, created_at, updated_at"]
         CORE_SKILLS["<b>skills</b><br/>• id (PK)<br/>• name (UQ), category"]
         JOB_SKILLS["<b>job_skills</b><br/>• job_id (PK/FK -> job.id)<br/>• skill_id (PK/FK -> skills.id)"]
-        CORE_CONTRACTS["<b>contracts</b><br/>• id (PK)<br/>• job_id (FK -> job.id)<br/>• employer_id (FK -> users.id)<br/>• employee_id (FK -> users.id, NULL)<br/>• agreed_rate, salary_type, status, payment_status"]
+        CORE_CONTRACTS["<b>contracts</b><br/>• id (PK)<br/>• job_id (FK -> job.id)<br/>• employer_id (FK -> users.id)<br/>• employee_id (FK -> users.id, NULL)<br/>• title, terms_file_key, job_description, salary_due_date<br/>• agreed_rate, salary_type, status, payment_status"]
         OFFERS["<b>offers</b><br/>• id (PK)<br/>• contract_id (FK -> contracts.id)<br/>• freelancer_id (FK -> users.id)<br/>• proposed_rate, status, created_at"]
-        CORE_CANCELS["<b>cancellation_contracts</b><br/>• id (PK)<br/>• contract_id (FK -> contracts.id)<br/>• requested_by_user_id (FK -> users.id)<br/>• reason, status"]
+        CORE_CANCELS["<b>cancellation_contracts</b><br/>• id (PK)<br/>• contract_id (FK -> contracts.id)<br/>• requested_by_user_id (FK -> users.id)<br/>• reason, evidence_file_key, status"]
         CORE_REVIEWS["<b>reviews</b><br/>• id (PK)<br/>• contract_id (FK -> contracts.id)<br/>• reviewer_user_id (FK -> users.id)<br/>• reviewee_user_id (FK -> users.id)<br/>• rating, comment, created_at"]
         CORE_REPORTS["<b>reports</b> (Local Entity)<br/>• id (PK)<br/>• reporter_user_id (FK -> users.id)<br/>• target_type (USER/PROJECT)<br/>• target_user_id (FK -> users.id, NULL)<br/>• target_project_id (FK -> projects.id, NULL)<br/>• reason_category (FRAUD/OUTSIDE_PAYMENT...), status"]
         CORE_EVIDENCES["<b>report_evidences</b> (Local Entity)<br/>• id (PK)<br/>• report_id (FK -> reports.id)<br/>• file_url, created_at"]
@@ -478,6 +478,10 @@ Quản lý danh tính người dùng, xác thực tài khoản, hồ sơ năng l
    - `job_id`: `UUID [FK -> job.id]` — Vị trí công việc gắn liền với hợp đồng.
    - `employer_id`: `UUID [FK -> users.id]` — Khách hàng tuyển dụng (Employer).
    - `employee_id`: `UUID [FK -> users.id, NULLABLE]` — Freelancer nhận việc (Employee).
+   - `title`: `VARCHAR(255)` — Tiêu đề hợp đồng.
+   - `terms_file_key`: `VARCHAR(500)` — Khóa/đường dẫn file điều khoản hợp đồng trên S3.
+   - `job_description`: `TEXT` — Bản mô tả công việc trong hợp đồng.
+   - `salary_due_date`: `VARCHAR(100)` — Ngày đến hạn thanh toán lương.
    - `source_type`: `VARCHAR(50)` — Nguồn tạo hợp đồng (`JOB_BID`, `DIRECT_OFFER`).
    - `source_id`: `UUID` — Định danh bản ghi nguồn (bids hoặc offers).
    - `agreed_rate`: `DECIMAL` — Mức thù lao thỏa thuận chi trả.
@@ -486,14 +490,18 @@ Quản lý danh tính người dùng, xác thực tài khoản, hồ sơ năng l
    - `payment_status`: `VARCHAR(50)` — Trạng thái ký quỹ / thanh toán.
    - `started_at`: `TIMESTAMP` — Thời điểm chính thức bắt đầu công việc.
    - `finished_at`: `TIMESTAMP` — Thời điểm hoàn tất công việc.
+   - `created_at`: `TIMESTAMP` — Thời điểm tạo hợp đồng (Audit).
+   - `updated_at`: `TIMESTAMP` — Thời điểm cập nhật hợp đồng (Audit).
 
 9. **`cancellation_contracts`** *(Yêu cầu hủy hợp đồng - Domain gốc của Core)*:
    - `id`: `UUID [PK]` — Định danh yêu cầu hủy hợp đồng.
    - `contract_id`: `UUID [FK -> contracts.id]` — Hợp đồng bị yêu cầu hủy.
    - `requested_by_user_id`: `UUID [FK -> users.id]` — Người dùng khởi tạo khiếu nại hủy.
    - `reason`: `TEXT` — Lý do chi tiết yêu cầu chấm dứt hợp đồng.
-   - `status`: `VARCHAR(50)` — Trạng thái xử lý khiếu nại hủy hợp đồng.
-
+   - `evidence_file_key`: `VARCHAR(500)` — Khóa/đường dẫn file chứng cứ hủy hợp đồng trên S3.
+   - `status`: `VARCHAR(50)` — Trạng thái xử lý khiếu nại hủy hợp đồng (`ACCEPTED`, `REJECTED`,...).
+   - `created_at`: `TIMESTAMP` — Thời điểm yêu cầu hủy (Audit).
+   - `updated_at`: `TIMESTAMP` — Thời điểm cập nhật yêu cầu hủy (Audit).
 10. **`reviews`** *(Đánh giá năng lực sau hợp đồng)*:
     - `id`: `UUID [PK]` — Định danh đánh giá.
     - `contract_id`: `UUID [FK -> contracts.id]` — Hợp đồng được đánh giá nghiệm thu.
