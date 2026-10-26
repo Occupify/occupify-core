@@ -33,10 +33,9 @@ public interface ProjectMapper {
   Project toEntity(CreateProjectRequest request);
 
   @Mapping(target = "employer", source = "employer")
-  @Mapping(target = "salaryMin", ignore = true)
-  @Mapping(target = "salaryMax", ignore = true)
   @Mapping(target = "skills", ignore = true)
   @Mapping(target = "openJobsCount", ignore = true)
+  @Mapping(target = "jobs", ignore = true)
   ProjectResponse toResponse(Project project);
 
   @Mapping(target = "employer", source = "project.employer")
@@ -67,10 +66,31 @@ public interface ProjectMapper {
 
   EmployerSummaryResponse toEmployerSummary(User employer);
 
-  @Mapping(target = "skills", source = "skills", qualifiedByName = "mapSkills")
-  JobSummaryResponse toJobSummary(Job job);
+  @Mapping(target = "skills", source = "job.skills", qualifiedByName = "mapSkills")
+  @Mapping(target = "projectId", source = "job.project.id")
+  @Mapping(target = "bidCount", source = "bidCount")
+  @Mapping(target = "id", source = "job.id")
+  @Mapping(target = "title", source = "job.title")
+  @Mapping(target = "description", source = "job.description")
+  @Mapping(target = "quantity", source = "job.quantity")
+  @Mapping(target = "salaryType", source = "job.salaryType")
+  @Mapping(target = "budgetMin", source = "job.budgetMin")
+  @Mapping(target = "budgetMax", source = "job.budgetMax")
+  @Mapping(target = "status", source = "job.status")
+  @Mapping(target = "createdAt", source = "job.createdAt")
+  @Mapping(target = "updatedAt", source = "job.updatedAt")
+  JobSummaryResponse toJobSummary(Job job, Integer bidCount);
 
-  List<JobSummaryResponse> toJobSummaries(List<Job> jobs);
+  default JobSummaryResponse toJobSummary(Job job) {
+    return toJobSummary(job, 0);
+  }
+
+  default List<JobSummaryResponse> toJobSummaries(List<Job> jobs) {
+    if (jobs == null) {
+      return List.of();
+    }
+    return jobs.stream().map(this::toJobSummary).toList();
+  }
 
   @Named("mapSkills")
   default Set<String> mapSkills(Set<Skill> skills) {

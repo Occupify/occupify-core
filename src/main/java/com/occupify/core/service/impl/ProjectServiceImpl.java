@@ -20,13 +20,13 @@ import com.occupify.core.exception.system.SystemErrorCode;
 import com.occupify.core.exception.system.SystemException;
 import com.occupify.core.mapper.ProjectMapper;
 import com.occupify.core.producer.ProjectEventProducer;
+import com.occupify.core.repository.bid.BidRepository;
 import com.occupify.core.repository.job.JobRepository;
 import com.occupify.core.repository.project.ProjectRepository;
 import com.occupify.core.repository.project.ProjectSpecification;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ProjectService;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +50,7 @@ public class ProjectServiceImpl implements ProjectService {
 
   private final ProjectRepository projectRepository;
   private final JobRepository jobRepository;
+  private final BidRepository bidRepository;
   private final UserRepository userRepository;
   private final ProjectMapper projectMapper;
   private final ProjectEventProducer projectEventProducer;
@@ -104,7 +105,19 @@ public class ProjectServiceImpl implements ProjectService {
                         ProjectErrorCode.PROJECT_NOT_FOUND, "Project not found with ID: " + id));
 
     List<Job> jobs = jobRepository.findWithSkillsByProjectId(id);
-    List<JobSummaryResponse> jobSummaries = projectMapper.toJobSummaries(jobs);
+    List<UUID> jobIds = jobs.stream().map(Job::getId).toList();
+    Map<UUID, Integer> bidCountsByJobId =
+        jobIds.isEmpty()
+            ? Map.of()
+            : bidRepository.countBidsByJobIdIn(jobIds).stream()
+                .collect(
+                    Collectors.toMap(row -> (UUID) row[0], row -> ((Number) row[1]).intValue()));
+    List<JobSummaryResponse> jobSummaries =
+        jobs.stream()
+            .map(
+                job ->
+                    projectMapper.toJobSummary(job, bidCountsByJobId.getOrDefault(job.getId(), 0)))
+            .toList();
 
     return projectMapper.toDetailResponse(project, jobSummaries);
   }
@@ -120,30 +133,36 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     List<UUID> projectIds = page.getContent().stream().map(Project::getId).toList();
-    List<Job> recruitingJobs =
-        jobRepository.findWithSkillsByProjectIdInAndStatus(projectIds, JobStatus.RECRUITING);
+    List<Job> allJobs = jobRepository.findWithSkillsByProjectIdIn(projectIds);
+    List<UUID> jobIds = allJobs.stream().map(Job::getId).toList();
+    Map<UUID, Integer> bidCountsByJobId =
+        jobIds.isEmpty()
+            ? Map.of()
+            : bidRepository.countBidsByJobIdIn(jobIds).stream()
+                .collect(
+                    Collectors.toMap(row -> (UUID) row[0], row -> ((Number) row[1]).intValue()));
 
     Map<UUID, List<Job>> jobsByProjectId =
-        recruitingJobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
+        allJobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
 
     return page.map(
         project -> {
           ProjectResponse baseResponse = projectMapper.toResponse(project);
           List<Job> projectJobs = jobsByProjectId.getOrDefault(project.getId(), List.of());
+          List<JobSummaryResponse> jobSummaries =
+              projectJobs.stream()
+                  .map(
+                      job ->
+                          projectMapper.toJobSummary(
+                              job, bidCountsByJobId.getOrDefault(job.getId(), 0)))
+                  .toList();
 
-          BigDecimal salaryMin = null;
-          BigDecimal salaryMax = null;
           Set<String> skills = new HashSet<>();
-          int openJobsCount = projectJobs.size();
+          int openJobsCount = 0;
 
           for (Job job : projectJobs) {
-            if (job.getBudgetMin() != null) {
-              salaryMin =
-                  (salaryMin == null) ? job.getBudgetMin() : salaryMin.min(job.getBudgetMin());
-            }
-            if (job.getBudgetMax() != null) {
-              salaryMax =
-                  (salaryMax == null) ? job.getBudgetMax() : salaryMax.max(job.getBudgetMax());
+            if (job.getStatus() == JobStatus.RECRUITING) {
+              openJobsCount++;
             }
             if (job.getSkills() != null) {
               for (Skill s : job.getSkills()) {
@@ -152,18 +171,10 @@ public class ProjectServiceImpl implements ProjectService {
             }
           }
 
-          if (salaryMin == null) {
-            salaryMin = project.getStartPrice();
-          }
-          if (salaryMax == null) {
-            salaryMax = project.getStartPrice();
-          }
-
           return new ProjectResponse(
               baseResponse.id(),
               baseResponse.title(),
               baseResponse.description(),
-              baseResponse.startPrice(),
               baseResponse.period(),
               baseResponse.dueDate(),
               baseResponse.experienceLevel(),
@@ -172,10 +183,9 @@ public class ProjectServiceImpl implements ProjectService {
               baseResponse.endDate(),
               baseResponse.closedAt(),
               baseResponse.employer(),
-              salaryMin,
-              salaryMax,
               skills,
               openJobsCount,
+              jobSummaries,
               baseResponse.createdAt(),
               baseResponse.updatedAt());
         });

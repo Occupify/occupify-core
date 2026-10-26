@@ -95,9 +95,17 @@ class ProjectSearchFilterControllerTest {
         .andExpect(jsonPath("$.data").isArray())
         .andExpect(jsonPath("$.data[0].id").value(activeProject.getId().toString()))
         .andExpect(jsonPath("$.data[0].title").value("Ứng dụng Quản lý Tài chính Cá nhân"))
-        .andExpect(jsonPath("$.data[0].salaryMin").value(20000000.0))
-        .andExpect(jsonPath("$.data[0].salaryMax").value(30000000.0))
         .andExpect(jsonPath("$.data[0].openJobsCount").value(1))
+        .andExpect(jsonPath("$.data[0].jobs").isArray())
+        .andExpect(jsonPath("$.data[0].jobs[0].title").value("Lead UI Designer"))
+        .andExpect(jsonPath("$.data[0].jobs[0].budgetMin").value(20000000.0))
+        .andExpect(jsonPath("$.data[0].jobs[0].budgetMax").value(30000000.0))
+        .andExpect(jsonPath("$.data[0].jobs[0].status").value("RECRUITING"))
+        .andExpect(jsonPath("$.data[0].jobs[0].bidCount").value(0))
+        .andExpect(jsonPath("$.data[0].jobs[0].projectId").value(activeProject.getId().toString()))
+        .andExpect(jsonPath("$.data[0].startPrice").doesNotExist())
+        .andExpect(jsonPath("$.data[0].salaryMin").doesNotExist())
+        .andExpect(jsonPath("$.data[0].salaryMax").doesNotExist())
         .andExpect(jsonPath("$.paging.total").value(1));
   }
 
