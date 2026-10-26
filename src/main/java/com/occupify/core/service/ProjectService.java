@@ -18,9 +18,6 @@ public interface ProjectService {
 
   Page<ProjectResponse> getProjects(ProjectFilterRequest filter, Pageable pageable);
 
-  Page<ProjectDetailResponse> getProjectsWithDetails(
-      ProjectFilterRequest filter, Pageable pageable);
-
   ProjectResponse updateProject(UUID id, UpdateProjectRequest request, UserContext userContext);
 
   ProjectResponse closeProject(UUID id, UserContext userContext);

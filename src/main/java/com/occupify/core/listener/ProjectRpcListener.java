@@ -4,6 +4,7 @@ import com.occupify.core.constant.MessageConstants;
 import com.occupify.core.dto.request.ProjectGetRequest;
 import com.occupify.core.dto.request.ProjectSearchRequest;
 import com.occupify.core.dto.response.ProjectDetailResponse;
+import com.occupify.core.dto.response.ProjectResponse;
 import com.occupify.core.exception.BaseException;
 import com.occupify.core.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -71,8 +72,7 @@ public class ProjectRpcListener {
       Sort sort = parseSort(request.sort());
 
       Pageable pageable = PageRequest.of(page, size, sort);
-      Page<ProjectDetailResponse> result =
-          projectService.getProjectsWithDetails(request.toFilter(), pageable);
+      Page<ProjectResponse> result = projectService.getProjects(request.toFilter(), pageable);
 
       log.info(
           "[Agent RPC][traceId={}][toolCallId={}] Search returned {} projects (page {}/{})",

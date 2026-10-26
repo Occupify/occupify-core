@@ -192,31 +192,6 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   @Override
-  public Page<ProjectDetailResponse> getProjectsWithDetails(
-      ProjectFilterRequest filter, Pageable pageable) {
-    log.info("[ProjectService] Querying projects with details and filters: {}", filter);
-    Specification<Project> spec = ProjectSpecification.withFilters(filter);
-    Page<Project> page = projectRepository.findAll(spec, pageable);
-
-    if (page.isEmpty()) {
-      return page.map(p -> projectMapper.toDetailResponse(p, List.of()));
-    }
-
-    List<UUID> projectIds = page.getContent().stream().map(Project::getId).toList();
-    List<Job> jobs = jobRepository.findWithSkillsByProjectIdIn(projectIds);
-
-    Map<UUID, List<Job>> jobsByProjectId =
-        jobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
-
-    return page.map(
-        project -> {
-          List<Job> projectJobs = jobsByProjectId.getOrDefault(project.getId(), List.of());
-          List<JobSummaryResponse> jobSummaries = projectMapper.toJobSummaries(projectJobs);
-          return projectMapper.toDetailResponse(project, jobSummaries);
-        });
-  }
-
-  @Override
   @Transactional
   public ProjectResponse updateProject(
       UUID id, UpdateProjectRequest request, UserContext userContext) {
