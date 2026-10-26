@@ -66,6 +66,7 @@ public interface ContractMapper {
 
   @Mapping(target = "skills", source = "skills", qualifiedByName = "mapSkills")
   @Mapping(target = "projectId", source = "project.id")
+  @Mapping(target = "bidCount", ignore = true)
   JobSummaryResponse toJobSummary(Job job);
 
   @Mapping(target = "employer", source = "employer")

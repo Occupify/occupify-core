@@ -17,6 +17,7 @@ public record JobSummaryResponse(
     BigDecimal budgetMin,
     BigDecimal budgetMax,
     JobStatus status,
+    Integer bidCount,
     Set<String> skills,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}

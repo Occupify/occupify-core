@@ -20,6 +20,7 @@ import com.occupify.core.exception.system.SystemErrorCode;
 import com.occupify.core.exception.system.SystemException;
 import com.occupify.core.mapper.ProjectMapper;
 import com.occupify.core.producer.ProjectEventProducer;
+import com.occupify.core.repository.bid.BidRepository;
 import com.occupify.core.repository.job.JobRepository;
 import com.occupify.core.repository.project.ProjectRepository;
 import com.occupify.core.repository.project.ProjectSpecification;
@@ -49,6 +50,7 @@ public class ProjectServiceImpl implements ProjectService {
 
   private final ProjectRepository projectRepository;
   private final JobRepository jobRepository;
+  private final BidRepository bidRepository;
   private final UserRepository userRepository;
   private final ProjectMapper projectMapper;
   private final ProjectEventProducer projectEventProducer;
@@ -103,7 +105,19 @@ public class ProjectServiceImpl implements ProjectService {
                         ProjectErrorCode.PROJECT_NOT_FOUND, "Project not found with ID: " + id));
 
     List<Job> jobs = jobRepository.findWithSkillsByProjectId(id);
-    List<JobSummaryResponse> jobSummaries = projectMapper.toJobSummaries(jobs);
+    List<UUID> jobIds = jobs.stream().map(Job::getId).toList();
+    Map<UUID, Integer> bidCountsByJobId =
+        jobIds.isEmpty()
+            ? Map.of()
+            : bidRepository.countBidsByJobIdIn(jobIds).stream()
+                .collect(
+                    Collectors.toMap(row -> (UUID) row[0], row -> ((Number) row[1]).intValue()));
+    List<JobSummaryResponse> jobSummaries =
+        jobs.stream()
+            .map(
+                job ->
+                    projectMapper.toJobSummary(job, bidCountsByJobId.getOrDefault(job.getId(), 0)))
+            .toList();
 
     return projectMapper.toDetailResponse(project, jobSummaries);
   }
@@ -120,6 +134,13 @@ public class ProjectServiceImpl implements ProjectService {
 
     List<UUID> projectIds = page.getContent().stream().map(Project::getId).toList();
     List<Job> allJobs = jobRepository.findWithSkillsByProjectIdIn(projectIds);
+    List<UUID> jobIds = allJobs.stream().map(Job::getId).toList();
+    Map<UUID, Integer> bidCountsByJobId =
+        jobIds.isEmpty()
+            ? Map.of()
+            : bidRepository.countBidsByJobIdIn(jobIds).stream()
+                .collect(
+                    Collectors.toMap(row -> (UUID) row[0], row -> ((Number) row[1]).intValue()));
 
     Map<UUID, List<Job>> jobsByProjectId =
         allJobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
@@ -128,7 +149,13 @@ public class ProjectServiceImpl implements ProjectService {
         project -> {
           ProjectResponse baseResponse = projectMapper.toResponse(project);
           List<Job> projectJobs = jobsByProjectId.getOrDefault(project.getId(), List.of());
-          List<JobSummaryResponse> jobSummaries = projectMapper.toJobSummaries(projectJobs);
+          List<JobSummaryResponse> jobSummaries =
+              projectJobs.stream()
+                  .map(
+                      job ->
+                          projectMapper.toJobSummary(
+                              job, bidCountsByJobId.getOrDefault(job.getId(), 0)))
+                  .toList();
 
           Set<String> skills = new HashSet<>();
           int openJobsCount = 0;

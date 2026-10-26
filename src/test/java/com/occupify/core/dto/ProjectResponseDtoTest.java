@@ -35,6 +35,7 @@ class ProjectResponseDtoTest {
             BigDecimal.valueOf(1500),
             BigDecimal.valueOf(3000),
             JobStatus.RECRUITING,
+            3,
             Set.of("Java"),
             LocalDateTime.now(),
             LocalDateTime.now());
@@ -65,6 +66,7 @@ class ProjectResponseDtoTest {
     assertEquals(jobId, response.jobs().get(0).id());
     assertEquals(id, response.jobs().get(0).projectId());
     assertEquals("Backend Dev", response.jobs().get(0).title());
+    assertEquals(3, response.jobs().get(0).bidCount());
     assertEquals(BigDecimal.valueOf(1500), response.jobs().get(0).budgetMin());
     assertEquals(BigDecimal.valueOf(3000), response.jobs().get(0).budgetMax());
   }

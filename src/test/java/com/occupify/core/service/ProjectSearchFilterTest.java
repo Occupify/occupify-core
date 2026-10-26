@@ -103,6 +103,7 @@ class ProjectSearchFilterTest {
     assertEquals(2, card.openJobsCount());
     assertEquals(2, card.jobs().size());
     assertEquals(project.getId(), card.jobs().get(0).projectId());
+    assertEquals(0, card.jobs().get(0).bidCount());
     assertTrue(card.skills().contains("Next.js"));
     assertTrue(card.skills().contains("Docker"));
   }

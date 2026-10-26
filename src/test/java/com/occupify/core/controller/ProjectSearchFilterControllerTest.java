@@ -101,6 +101,7 @@ class ProjectSearchFilterControllerTest {
         .andExpect(jsonPath("$.data[0].jobs[0].budgetMin").value(20000000.0))
         .andExpect(jsonPath("$.data[0].jobs[0].budgetMax").value(30000000.0))
         .andExpect(jsonPath("$.data[0].jobs[0].status").value("RECRUITING"))
+        .andExpect(jsonPath("$.data[0].jobs[0].bidCount").value(0))
         .andExpect(jsonPath("$.data[0].jobs[0].projectId").value(activeProject.getId().toString()))
         .andExpect(jsonPath("$.data[0].startPrice").doesNotExist())
         .andExpect(jsonPath("$.data[0].salaryMin").doesNotExist())
