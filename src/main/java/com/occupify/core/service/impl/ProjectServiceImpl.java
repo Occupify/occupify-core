@@ -120,30 +120,23 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     List<UUID> projectIds = page.getContent().stream().map(Project::getId).toList();
-    List<Job> recruitingJobs =
-        jobRepository.findWithSkillsByProjectIdInAndStatus(projectIds, JobStatus.RECRUITING);
+    List<Job> allJobs = jobRepository.findWithSkillsByProjectIdIn(projectIds);
 
     Map<UUID, List<Job>> jobsByProjectId =
-        recruitingJobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
+        allJobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
 
     return page.map(
         project -> {
           ProjectResponse baseResponse = projectMapper.toResponse(project);
           List<Job> projectJobs = jobsByProjectId.getOrDefault(project.getId(), List.of());
+          List<JobSummaryResponse> jobSummaries = projectMapper.toJobSummaries(projectJobs);
 
-          BigDecimal salaryMin = null;
-          BigDecimal salaryMax = null;
           Set<String> skills = new HashSet<>();
-          int openJobsCount = projectJobs.size();
+          int openJobsCount = 0;
 
           for (Job job : projectJobs) {
-            if (job.getBudgetMin() != null) {
-              salaryMin =
-                  (salaryMin == null) ? job.getBudgetMin() : salaryMin.min(job.getBudgetMin());
-            }
-            if (job.getBudgetMax() != null) {
-              salaryMax =
-                  (salaryMax == null) ? job.getBudgetMax() : salaryMax.max(job.getBudgetMax());
+            if (job.getStatus() == JobStatus.RECRUITING) {
+              openJobsCount++;
             }
             if (job.getSkills() != null) {
               for (Skill s : job.getSkills()) {
@@ -152,18 +145,10 @@ public class ProjectServiceImpl implements ProjectService {
             }
           }
 
-          if (salaryMin == null) {
-            salaryMin = project.getStartPrice();
-          }
-          if (salaryMax == null) {
-            salaryMax = project.getStartPrice();
-          }
-
           return new ProjectResponse(
               baseResponse.id(),
               baseResponse.title(),
               baseResponse.description(),
-              baseResponse.startPrice(),
               baseResponse.period(),
               baseResponse.dueDate(),
               baseResponse.experienceLevel(),
@@ -172,10 +157,9 @@ public class ProjectServiceImpl implements ProjectService {
               baseResponse.endDate(),
               baseResponse.closedAt(),
               baseResponse.employer(),
-              salaryMin,
-              salaryMax,
               skills,
               openJobsCount,
+              jobSummaries,
               baseResponse.createdAt(),
               baseResponse.updatedAt());
         });

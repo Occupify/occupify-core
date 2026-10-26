@@ -33,10 +33,9 @@ public interface ProjectMapper {
   Project toEntity(CreateProjectRequest request);
 
   @Mapping(target = "employer", source = "employer")
-  @Mapping(target = "salaryMin", ignore = true)
-  @Mapping(target = "salaryMax", ignore = true)
   @Mapping(target = "skills", ignore = true)
   @Mapping(target = "openJobsCount", ignore = true)
+  @Mapping(target = "jobs", ignore = true)
   ProjectResponse toResponse(Project project);
 
   @Mapping(target = "employer", source = "project.employer")
@@ -68,6 +67,7 @@ public interface ProjectMapper {
   EmployerSummaryResponse toEmployerSummary(User employer);
 
   @Mapping(target = "skills", source = "skills", qualifiedByName = "mapSkills")
+  @Mapping(target = "projectId", source = "project.id")
   JobSummaryResponse toJobSummary(Job job);
 
   List<JobSummaryResponse> toJobSummaries(List<Job> jobs);

@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public record JobSummaryResponse(
     UUID id,
+    UUID projectId,
     String title,
     String description,
     Integer quantity,
@@ -17,4 +18,5 @@ public record JobSummaryResponse(
     BigDecimal budgetMax,
     JobStatus status,
     Set<String> skills,
-    LocalDateTime createdAt) {}
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt) {}

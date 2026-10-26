@@ -101,8 +101,8 @@ class ProjectSearchFilterTest {
     ProjectResponse card = page.getContent().get(0);
     assertEquals(project.getId(), card.id());
     assertEquals(2, card.openJobsCount());
-    assertEquals(0, BigDecimal.valueOf(18000000).compareTo(card.salaryMin()));
-    assertEquals(0, BigDecimal.valueOf(35000000).compareTo(card.salaryMax()));
+    assertEquals(2, card.jobs().size());
+    assertEquals(project.getId(), card.jobs().get(0).projectId());
     assertTrue(card.skills().contains("Next.js"));
     assertTrue(card.skills().contains("Docker"));
   }

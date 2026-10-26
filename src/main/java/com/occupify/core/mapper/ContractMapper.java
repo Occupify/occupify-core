@@ -65,13 +65,13 @@ public interface ContractMapper {
   EmployerSummaryResponse toEmployerSummary(User user);
 
   @Mapping(target = "skills", source = "skills", qualifiedByName = "mapSkills")
+  @Mapping(target = "projectId", source = "project.id")
   JobSummaryResponse toJobSummary(Job job);
 
   @Mapping(target = "employer", source = "employer")
-  @Mapping(target = "salaryMin", ignore = true)
-  @Mapping(target = "salaryMax", ignore = true)
   @Mapping(target = "skills", ignore = true)
   @Mapping(target = "openJobsCount", ignore = true)
+  @Mapping(target = "jobs", ignore = true)
   ProjectResponse toProjectResponse(Project project);
 
   @Named("mapSkills")
