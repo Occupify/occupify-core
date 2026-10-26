@@ -1,12 +1,13 @@
-COMPOSE ?= podman compose
+ENV_FILE ?= $(shell if [ -f core.env ]; then echo "--env-file core.env"; elif [ -f .env ]; then echo "--env-file .env"; fi)
+COMPOSE ?= $(shell if command -v docker >/dev/null 2>&1; then echo "docker compose"; else echo "podman compose"; fi)
 
 .PHONY: help up infra down
 
-infra:
-	@$(COMPOSE) --env-file core.env up -d
+infra: 
+	@$(COMPOSE) $(ENV_FILE) up -d
 
-up:
+up: infra
 	@./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 
-down:
-	@$(COMPOSE) down -v
+down: 
+	@$(COMPOSE) $(ENV_FILE) down

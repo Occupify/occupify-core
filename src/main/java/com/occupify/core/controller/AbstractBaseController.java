@@ -16,6 +16,10 @@ public abstract class AbstractBaseController {
     return responseFactory.successSingle(data, message);
   }
 
+  protected <T> ResponseEntity<SingleResponse<T>> accepted(T data, String message) {
+    return responseFactory.accepted(data, message);
+  }
+
   protected <T> ResponseEntity<CreatedResponse<T>> created(T data, String message) {
     return responseFactory.created(data, message);
   }

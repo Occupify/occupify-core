@@ -25,6 +25,11 @@ public class ResponseFactory {
     return ResponseEntity.ok(new SingleResponse<>(HttpStatus.OK.value(), message, data));
   }
 
+  public <T> ResponseEntity<SingleResponse<T>> accepted(T data, String message) {
+    return ResponseEntity.status(HttpStatus.ACCEPTED)
+        .body(new SingleResponse<>(HttpStatus.ACCEPTED.value(), message, data));
+  }
+
   public <T> ResponseEntity<CreatedResponse<T>> created(T data, String message) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(new CreatedResponse<>(HttpStatus.CREATED.value(), message, data));
