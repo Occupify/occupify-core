@@ -21,7 +21,7 @@ INSERT INTO bids (
     weekly_commitment_hours,
     message,
     attachment_cv_url,
-    portfolio_link,
+    portfolio_url,
     status,
     created_at,
     updated_at
