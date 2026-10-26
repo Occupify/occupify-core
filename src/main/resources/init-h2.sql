@@ -21,3 +21,7 @@ CREATE TABLE IF NOT EXISTS cancellation_contracts (
 CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_contract_id ON cancellation_contracts(contract_id);
 CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_requested_by_user_id ON cancellation_contracts(requested_by_user_id);
 CREATE INDEX IF NOT EXISTS idx_cancellation_contracts_status ON cancellation_contracts(status);
+
+-- Indexes from V5 bids migration
+CREATE UNIQUE INDEX IF NOT EXISTS uk_bids_job_freelancer ON bids(job_id, freelancer_id);
+CREATE INDEX IF NOT EXISTS idx_bids_freelancer_status ON bids(freelancer_id, status);

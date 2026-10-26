@@ -1,5 +1,5 @@
 -- =========================================================================
--- V5: Alter contracts table and create cancellation_contracts table
+-- V6: Alter contracts table and create cancellation_contracts table
 -- =========================================================================
 
 -- 1. Alter contracts table to add contract terms and job details

@@ -5,9 +5,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface StorageService {
 
+  String uploadDocument(String directory, MultipartFile file);
+
   /**
-   * Uploads a private document (e.g. contract terms, cancellation evidence) to Object Storage.
-   *
    * @param directory target directory/prefix (e.g. "contracts/123")
    * @param file the uploaded file
    * @return the generated S3 object key (e.g. "contracts/123/uuid_filename.pdf")

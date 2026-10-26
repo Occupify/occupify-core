@@ -18,4 +18,9 @@ public final class MessageConstants {
   public static final String CONTRACT_ACCEPTED = "Contract accepted successfully";
   public static final String CONTRACT_REJECTED = "Contract rejected successfully";
   public static final String CONTRACT_COMPLETED = "Contract completed successfully";
+  public static final String BID_CREATED = "Bid submitted successfully";
+  public static final String BID_UPDATED = "Bid updated successfully";
+  public static final String BID_RETRIEVED = "Bid retrieved successfully";
+  public static final String BID_LIST_RETRIEVED = "Bids retrieved successfully";
+  public static final String BID_CANCELLED = "Bid cancelled successfully";
 }

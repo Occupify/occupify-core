@@ -22,7 +22,15 @@ public enum StorageErrorCode implements BaseErrorCode {
   PRESIGN_FAILED(
       "STORAGE_005", "Failed to generate presigned URL", HttpStatus.INTERNAL_SERVER_ERROR),
   DELETE_FAILED(
-      "STORAGE_006", "Failed to delete file from storage", HttpStatus.INTERNAL_SERVER_ERROR);
+      "STORAGE_006", "Failed to delete file from storage", HttpStatus.INTERNAL_SERVER_ERROR),
+  INVALID_DOCUMENT_TYPE(
+      "STORAGE_007",
+      "Only PDF, JPEG, PNG, and WEBP documents are allowed for attachments",
+      HttpStatus.BAD_REQUEST),
+  DOCUMENT_TOO_LARGE(
+      "STORAGE_008",
+      "Uploaded document exceeds maximum allowed limit (10MB)",
+      HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final String message;
