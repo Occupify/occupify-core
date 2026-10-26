@@ -161,11 +161,9 @@ public class RabbitMQConfig {
     idClassMapping.put(
         "ContractCompensationRequestedEvent", ContractCompensationRequestedEvent.class);
     idClassMapping.put(
-        "com.occupify.payment.event.ContractEscrowLockedEvent",
-        ContractEscrowLockedEvent.class);
+        "com.occupify.payment.event.ContractEscrowLockedEvent", ContractEscrowLockedEvent.class);
     idClassMapping.put(
-        "com.occupify.core.event.ContractEscrowLockedEvent",
-        ContractEscrowLockedEvent.class);
+        "com.occupify.core.event.ContractEscrowLockedEvent", ContractEscrowLockedEvent.class);
     idClassMapping.put("ContractEscrowLockedEvent", ContractEscrowLockedEvent.class);
     typeMapper.setIdClassMapping(idClassMapping);
 

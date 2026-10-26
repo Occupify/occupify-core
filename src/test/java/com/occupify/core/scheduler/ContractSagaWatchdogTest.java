@@ -13,7 +13,6 @@ import com.occupify.core.enums.ContractStatus;
 import com.occupify.core.event.ContractCompensationRequestedEvent;
 import com.occupify.core.producer.ContractEventProducer;
 import com.occupify.core.repository.contract.ContractRepository;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;

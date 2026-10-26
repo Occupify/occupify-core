@@ -26,7 +26,8 @@ public class ContractEventProducerImpl implements ContractEventProducer {
   @Value("${app.rabbitmq.contract-rejected-routing-key:contract.rejected}")
   private String contractRejectedRoutingKey;
 
-  @Value("${app.rabbitmq.contract-compensation-publish-routing-key:contract.compensation.requested}")
+  @Value(
+      "${app.rabbitmq.contract-compensation-publish-routing-key:contract.compensation.requested}")
   private String contractCompensationPublishRoutingKey;
 
   @Override

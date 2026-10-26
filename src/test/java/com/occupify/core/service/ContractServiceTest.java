@@ -475,7 +475,8 @@ class ContractServiceTest {
   }
 
   @Test
-  @DisplayName("Should accept contract, set PENDING_ESCROW, publish event, and confirm escrow sets IN_PROGRESS")
+  @DisplayName(
+      "Should accept contract, set PENDING_ESCROW, publish event, and confirm escrow sets IN_PROGRESS")
   void shouldAcceptContract() {
     Contract contract =
         Contract.builder()

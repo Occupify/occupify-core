@@ -29,7 +29,8 @@ public enum ContractErrorCode implements BaseErrorCode {
       "CONTRACT_008",
       "Bạn không có quyền truy cập hoặc thực hiện thao tác trên hợp đồng này",
       HttpStatus.FORBIDDEN),
-  INVALID_CONTRACT_STATUS("CONTRACT_009", "Contract is not in expected status", HttpStatus.BAD_REQUEST);
+  INVALID_CONTRACT_STATUS(
+      "CONTRACT_009", "Contract is not in expected status", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final String message;
