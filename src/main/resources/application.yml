@@ -63,6 +63,7 @@ app:
       secret-key: ${S3_SECRET_KEY:}
       public-url-prefix: ${S3_PUBLIC_URL_PREFIX:}
       path-style-access-enabled: ${S3_PATH_STYLE_ACCESS_ENABLED:true}
+      presigned-duration-minutes: ${S3_PRESIGNED_DURATION_MINUTES:15}
 
 springdoc:
   api-docs:

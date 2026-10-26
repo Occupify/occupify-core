@@ -152,6 +152,12 @@ erDiagram
         VARCHAR payment_status
         TIMESTAMP started_at
         TIMESTAMP finished_at
+        VARCHAR title
+        VARCHAR terms_file_key
+        TEXT job_description
+        VARCHAR salary_due_date
+        TIMESTAMP created_at "Audit"
+        TIMESTAMP updated_at "Audit"
     }
 
     CANCELLATION_CONTRACTS {
@@ -159,9 +165,11 @@ erDiagram
         UUID contract_id FK "-> contracts.id"
         UUID requested_by_user_id FK "-> users.id"
         TEXT reason
+        VARCHAR evidence_file_key
         VARCHAR status
+        TIMESTAMP created_at "Audit"
+        TIMESTAMP updated_at "Audit"
     }
-
     REVIEWS {
         UUID id PK
         UUID contract_id FK "-> contracts.id"
@@ -323,6 +331,12 @@ Bảng hợp đồng chính thức do **Core** sở hữu gốc.
 | `payment_status` | `VARCHAR(50)` | NULLABLE | NULL | Trạng thái ký quỹ / thanh toán |
 | `started_at` | `TIMESTAMP` | NULLABLE | NULL | Thời điểm chính thức bắt đầu công việc |
 | `finished_at` | `TIMESTAMP` | NULLABLE | NULL | Thời điểm hoàn tất công việc |
+| `title` | `VARCHAR(255)` | NULLABLE | NULL | Tiêu đề hợp đồng |
+| `terms_file_key` | `VARCHAR(500)` | NULLABLE | NULL | Đường dẫn/Key file điều khoản hợp đồng lưu trữ trên S3 |
+| `job_description` | `TEXT` | NULLABLE | NULL | Mô tả chi tiết công việc trong hợp đồng |
+| `salary_due_date` | `VARCHAR(100)` | NULLABLE | NULL | Ngày thanh toán lương định kỳ |
+| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Thời điểm tạo hợp đồng (Audit) |
+| `updated_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Thời điểm cập nhật hợp đồng (Audit) |
 
 ---
 
@@ -334,8 +348,10 @@ Bảng hợp đồng chính thức do **Core** sở hữu gốc.
 | `contract_id` | `UUID` | **FK** -> `contracts.id`, NOT NULL | None | Hợp đồng bị yêu cầu hủy |
 | `requested_by_user_id` | `UUID` | **FK** -> `users.id`, NOT NULL | None | Người dùng khởi tạo khiếu nại hủy |
 | `reason` | `TEXT` | NOT NULL | None | Lý do chi tiết yêu cầu chấm dứt hợp đồng |
-| `status` | `VARCHAR(50)` | NOT NULL | `'pending'` | Trạng thái xử lý khiếu nại hủy hợp đồng |
-
+| `evidence_file_key` | `VARCHAR(500)` | NULLABLE | NULL | Đường dẫn/Key tài liệu bằng chứng hủy hợp đồng lưu trên S3 |
+| `status` | `VARCHAR(50)` | NOT NULL | `'ACCEPTED'` | Trạng thái xử lý khiếu nại hủy hợp đồng |
+| `created_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Thời điểm yêu cầu hủy (Audit) |
+| `updated_at` | `TIMESTAMP` | NOT NULL | `CURRENT_TIMESTAMP` | Thời điểm cập nhật trạng thái hủy (Audit) |
 ---
 
 ### 3.10. Bảng `reviews` (Đánh giá sau hợp đồng - Gốc)

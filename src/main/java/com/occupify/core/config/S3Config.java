@@ -6,17 +6,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class S3Config {
 
+  private static final String DEFAULT_REGION = "ap-singapore-1";
   private final S3Properties properties;
 
   @Bean
@@ -28,49 +31,14 @@ public class S3Config {
         properties.getBucketNamespace());
 
     S3ClientBuilder builder = S3Client.builder();
+    builder.region(resolveRegion());
+    builder.credentialsProvider(resolveCredentialsProvider());
 
-    // 1. Configure Cloud Region
-    if (properties.getRegion() != null && !properties.getRegion().isBlank()) {
-      builder.region(Region.of(properties.getRegion().trim()));
-    } else {
-      builder.region(Region.AP_SOUTHEAST_1);
+    URI endpoint = resolveEndpoint();
+    if (endpoint != null) {
+      builder.endpointOverride(endpoint);
     }
 
-    // 2. Configure Credentials
-    if (properties.getAccessKey() != null
-        && !properties.getAccessKey().isBlank()
-        && properties.getSecretKey() != null
-        && !properties.getSecretKey().isBlank()) {
-      log.info("Successfully loaded S3 credentials into StaticCredentialsProvider.");
-      AwsBasicCredentials credentials =
-          AwsBasicCredentials.create(
-              properties.getAccessKey().trim(), properties.getSecretKey().trim());
-      builder.credentialsProvider(StaticCredentialsProvider.create(credentials));
-    } else {
-      log.warn(
-          "S3 credentials not fully supplied (accessKey='{}', secretKey='{}'). Falling back to dummy credentials for development/testing.",
-          properties.getAccessKey(),
-          properties.getSecretKey());
-      builder.credentialsProvider(
-          StaticCredentialsProvider.create(
-              AwsBasicCredentials.create("dummy-access-key", "dummy-secret-key")));
-    }
-
-    // 3. Configure Endpoint Override (OCI Object Storage, MinIO, or Cloudflare R2)
-    if (properties.getEndpoint() != null && !properties.getEndpoint().isBlank()) {
-      builder.endpointOverride(URI.create(properties.getEndpoint().trim()));
-    } else if (properties.getBucketNamespace() != null
-        && !properties.getBucketNamespace().isBlank()) {
-      String derivedEndpoint =
-          String.format(
-              "https://%s.compat.objectstorage.%s.oraclecloud.com",
-              properties.getBucketNamespace().trim(),
-              properties.getRegion() != null ? properties.getRegion().trim() : "ap-singapore-1");
-      log.info("Auto-derived OCI S3-compatible endpoint: {}", derivedEndpoint);
-      builder.endpointOverride(URI.create(derivedEndpoint));
-    }
-
-    // 4. Configure Path-style Access (Required for OCI Object Storage & MinIO)
     S3Configuration s3Configuration =
         S3Configuration.builder()
             .pathStyleAccessEnabled(properties.isPathStyleAccessEnabled())
@@ -78,5 +46,69 @@ public class S3Config {
     builder.serviceConfiguration(s3Configuration);
 
     return builder.build();
+  }
+
+  @Bean
+  public S3Presigner s3Presigner() {
+    log.info(
+        "Initializing S3Presigner for region: {}, bucket: {}",
+        properties.getRegion(),
+        properties.getBucketName());
+
+    S3Presigner.Builder builder = S3Presigner.builder();
+    builder.region(resolveRegion());
+    builder.credentialsProvider(resolveCredentialsProvider());
+
+    URI endpoint = resolveEndpoint();
+    if (endpoint != null) {
+      builder.endpointOverride(endpoint);
+    }
+
+    S3Configuration s3Configuration =
+        S3Configuration.builder()
+            .pathStyleAccessEnabled(properties.isPathStyleAccessEnabled())
+            .build();
+    builder.serviceConfiguration(s3Configuration);
+
+    return builder.build();
+  }
+
+  private Region resolveRegion() {
+    if (properties.getRegion() != null && !properties.getRegion().isBlank()) {
+      return Region.of(properties.getRegion().trim());
+    }
+    return Region.of(DEFAULT_REGION);
+  }
+
+  private AwsCredentialsProvider resolveCredentialsProvider() {
+    if (properties.getAccessKey() != null
+        && !properties.getAccessKey().isBlank()
+        && properties.getSecretKey() != null
+        && !properties.getSecretKey().isBlank()) {
+      AwsBasicCredentials credentials =
+          AwsBasicCredentials.create(
+              properties.getAccessKey().trim(), properties.getSecretKey().trim());
+      return StaticCredentialsProvider.create(credentials);
+    }
+    log.warn(
+        "S3 credentials not fully supplied. Falling back to dummy credentials for dev/testing.");
+    return StaticCredentialsProvider.create(
+        AwsBasicCredentials.create("dummy-access-key", "dummy-secret-key"));
+  }
+
+  private URI resolveEndpoint() {
+    if (properties.getEndpoint() != null && !properties.getEndpoint().isBlank()) {
+      return URI.create(properties.getEndpoint().trim());
+    }
+    if (properties.getBucketNamespace() != null && !properties.getBucketNamespace().isBlank()) {
+      String region = resolveRegion().id();
+      String derivedEndpoint =
+          String.format(
+              "https://%s.compat.objectstorage.%s.oraclecloud.com",
+              properties.getBucketNamespace().trim(), region);
+      log.info("Auto-derived OCI S3-compatible endpoint: {}", derivedEndpoint);
+      return URI.create(derivedEndpoint);
+    }
+    return null;
   }
 }

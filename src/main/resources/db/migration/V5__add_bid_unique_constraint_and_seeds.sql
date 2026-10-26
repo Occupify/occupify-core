@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: V4__add_bid_unique_constraint_and_seeds.sql
+-- Migration: V5__add_bid_unique_constraint_and_seeds.sql
 -- Description: Add unique constraint on (job_id, freelancer_id), performance index,
 --              and seed mock bid data for testing and development.
 -- =============================================================================

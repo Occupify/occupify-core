@@ -27,7 +27,7 @@ import com.occupify.core.repository.project.ProjectRepository;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.BidService;
-import com.occupify.core.service.storage.StorageService;
+import com.occupify.core.service.StorageService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
