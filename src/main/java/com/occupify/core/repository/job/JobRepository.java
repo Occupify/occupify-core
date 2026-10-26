@@ -19,6 +19,9 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
   @EntityGraph(attributePaths = {"skills"})
   List<Job> findWithSkillsByProjectIdInAndStatus(List<UUID> projectIds, JobStatus status);
 
+  @EntityGraph(attributePaths = {"skills"})
+  List<Job> findWithSkillsByProjectIdIn(List<UUID> projectIds);
+
   List<Job> findByProjectId(UUID projectId);
 
   @EntityGraph(attributePaths = {"project", "project.employer"})
