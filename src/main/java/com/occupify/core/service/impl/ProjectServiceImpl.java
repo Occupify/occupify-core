@@ -26,7 +26,6 @@ import com.occupify.core.repository.project.ProjectSpecification;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ProjectService;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
