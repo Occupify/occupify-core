@@ -263,3 +263,21 @@ FROM (VALUES
 JOIN job j ON j.id = mapping.job_id
 JOIN skills s ON s.name = mapping.skill_name
 ON CONFLICT (job_id, skill_id) DO NOTHING;
+
+-- 6. SEED TEST CONTRACT (Pending acceptance)
+INSERT INTO contracts (id, job_id, freelancer_id, title, description, budget, salary_type, start_date, end_date, attachment_url, status, created_at, updated_at)
+VALUES (
+    'c1111111-1111-1111-1111-111111111111',
+    'b0000000-0000-0000-0000-000000000001',
+    '33333333-3333-3333-3333-333333333333',
+    'Senior Backend Engineer - Core Payments',
+    'Xây dựng kiến trúc backend và các module thanh toán lõi',
+    20000000.00,
+    'MONTHLY',
+    NULL,
+    '2026-12-31',
+    'https://storage.occupify.work/contracts/c1.pdf',
+    'PENDING',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+) ON CONFLICT (id) DO NOTHING;

@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -131,17 +132,21 @@ public class ContractController extends AbstractBaseController {
     return successSingle(response, MessageConstants.CONTRACT_CANCELLED);
   }
 
-  @PostMapping(RouteConstants.CONTRACT_ACCEPT)
+  @RequestMapping(
+      value = RouteConstants.CONTRACT_ACCEPT,
+      method = {RequestMethod.POST, RequestMethod.PUT})
   @Operation(
       summary = "Accept a contract",
       description = "Accepts a pending contract by the freelancer/employee")
   public ResponseEntity<SingleResponse<ContractDetailResponse>> acceptContract(
       @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
     ContractDetailResponse response = contractService.acceptContract(id, userContext);
-    return successSingle(response, MessageConstants.CONTRACT_ACCEPTED);
+    return accepted(response, MessageConstants.CONTRACT_ACCEPTED);
   }
 
-  @PostMapping(RouteConstants.CONTRACT_REJECT)
+  @RequestMapping(
+      value = RouteConstants.CONTRACT_REJECT,
+      method = {RequestMethod.POST, RequestMethod.PUT})
   @Operation(
       summary = "Reject a contract offer",
       description =

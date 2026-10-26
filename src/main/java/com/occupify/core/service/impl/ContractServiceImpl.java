@@ -19,9 +19,13 @@ import com.occupify.core.entity.user.User;
 import com.occupify.core.enums.BidStatus;
 import com.occupify.core.enums.ContractStatus;
 import com.occupify.core.enums.OfferStatus;
+import com.occupify.core.enums.SalaryType;
+import com.occupify.core.event.ContractAcceptedEvent;
+import com.occupify.core.event.ContractRejectedEvent;
 import com.occupify.core.exception.contract.ContractErrorCode;
 import com.occupify.core.exception.contract.ContractException;
 import com.occupify.core.mapper.ContractMapper;
+import com.occupify.core.producer.ContractEventProducer;
 import com.occupify.core.repository.bid.BidRepository;
 import com.occupify.core.repository.contract.CancellationContractRepository;
 import com.occupify.core.repository.contract.ContractRepository;
@@ -34,6 +38,7 @@ import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ContractService;
 import com.occupify.core.service.StorageService;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -64,6 +69,7 @@ public class ContractServiceImpl implements ContractService {
   private final ReviewRepository reviewRepository;
   private final StorageService storageService;
   private final ContractMapper contractMapper;
+  private final ContractEventProducer contractEventProducer;
 
   @Override
   public ContractDetailResponse createContract(
@@ -283,11 +289,40 @@ public class ContractServiceImpl implements ContractService {
 
     validateStatusForAcceptance(contract.getStatus());
 
-    contract.setStatus(ContractStatus.IN_PROGRESS);
-    contract.setStartedAt(LocalDateTime.now());
+    contract.setStatus(ContractStatus.PENDING_ESCROW);
     contract = contractRepository.save(contract);
 
-    acceptPendingOffers(contract.getId());
+    UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
+    UUID jobId = contract.getJob() != null ? contract.getJob().getId() : null;
+    UUID projectId =
+        (contract.getJob() != null && contract.getJob().getProject() != null)
+            ? contract.getJob().getProject().getId()
+            : null;
+
+    SalaryType salaryTypeEnum = SalaryType.FIXED;
+    try {
+      if (contract.getSalaryType() != null) {
+        salaryTypeEnum = SalaryType.valueOf(contract.getSalaryType().toUpperCase());
+      }
+    } catch (IllegalArgumentException ignored) {
+    }
+
+    ContractAcceptedEvent event =
+        new ContractAcceptedEvent(
+            UUID.randomUUID(),
+            contract.getId(),
+            jobId,
+            projectId,
+            employerId,
+            userContext.userId(),
+            contract.getTitle(),
+            contract.getAgreedRate(),
+            salaryTypeEnum,
+            LocalDate.now(),
+            contract.getFinishedAt() != null ? contract.getFinishedAt().toLocalDate() : null,
+            LocalDateTime.now());
+
+    contractEventProducer.publishContractAccepted(event);
 
     String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
     return contractMapper.toDetailResponse(contract, termsFileUrl, null);
@@ -328,6 +363,20 @@ public class ContractServiceImpl implements ContractService {
             .status("ACCEPTED")
             .build();
     cancellation = cancellationContractRepository.save(cancellation);
+
+    UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
+    UUID jobId = contract.getJob() != null ? contract.getJob().getId() : null;
+
+    ContractRejectedEvent event =
+        new ContractRejectedEvent(
+            UUID.randomUUID(),
+            contract.getId(),
+            jobId,
+            employerId,
+            userContext.userId(),
+            reason,
+            LocalDateTime.now());
+    contractEventProducer.publishContractRejected(event);
 
     String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
     CancellationContractResponse cancellationResponse =
@@ -533,5 +582,50 @@ public class ContractServiceImpl implements ContractService {
               return contractMapper.toCancellationResponse(cancellation, evidenceUrl);
             })
         .orElse(null);
+  }
+
+  @Override
+  public void confirmContractEscrow(UUID contractId) {
+    Contract contract = contractRepository.findById(contractId).orElse(null);
+    if (contract == null) {
+      log.warn("[Saga Escrow] Contract [{}] not found for activation", contractId);
+      return;
+    }
+
+    if (contract.getStatus() == ContractStatus.PENDING_ESCROW) {
+      log.info(
+          "[Saga Escrow] Escrow confirmed for contract [{}]. Transitioning to IN_PROGRESS",
+          contractId);
+      contract.setStatus(ContractStatus.IN_PROGRESS);
+      contract.setStartedAt(LocalDateTime.now());
+      contractRepository.save(contract);
+      acceptPendingOffers(contract.getId());
+    } else {
+      log.warn(
+          "[Saga Escrow] Contract [{}] has status [{}], expected PENDING_ESCROW for activation",
+          contractId,
+          contract.getStatus());
+    }
+  }
+
+  @Override
+  public void compensateContract(UUID contractId, String reason) {
+    Contract contract = contractRepository.findById(contractId).orElse(null);
+    if (contract == null) {
+      log.warn("[Saga Compensation] Contract [{}] not found for rollback", contractId);
+      return;
+    }
+
+    if (contract.getStatus() == ContractStatus.IN_PROGRESS
+        || contract.getStatus() == ContractStatus.PENDING_ESCROW) {
+      log.warn(
+          "[Saga Compensation] Rolling back contract [{}] from [{}] to PENDING. Reason: {}",
+          contractId,
+          contract.getStatus(),
+          reason);
+      contract.setStatus(ContractStatus.PENDING);
+      contract.setStartedAt(null);
+      contractRepository.save(contract);
+    }
   }
 }

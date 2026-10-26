@@ -42,4 +42,8 @@ public interface ContractService {
 
   ContractDetailResponse completeContract(
       UUID id, CompleteContractRequest request, UserContext userContext);
+
+  void confirmContractEscrow(UUID contractId);
+
+  void compensateContract(UUID contractId, String reason);
 }

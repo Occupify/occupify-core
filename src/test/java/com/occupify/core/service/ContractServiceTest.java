@@ -41,6 +41,7 @@ import com.occupify.core.security.UserContext;
 import com.occupify.core.service.impl.ContractServiceImpl;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,6 +67,7 @@ class ContractServiceTest {
   private ReviewRepository reviewRepository;
   private StorageService storageService;
   private ContractMapper contractMapper;
+  private com.occupify.core.producer.ContractEventProducer contractEventProducer;
 
   private ContractService contractService;
 
@@ -88,6 +90,7 @@ class ContractServiceTest {
     reviewRepository = mock(ReviewRepository.class);
     storageService = mock(StorageService.class);
     contractMapper = mock(ContractMapper.class);
+    contractEventProducer = mock(com.occupify.core.producer.ContractEventProducer.class);
 
     contractService =
         new ContractServiceImpl(
@@ -99,7 +102,8 @@ class ContractServiceTest {
             offerRepository,
             reviewRepository,
             storageService,
-            contractMapper);
+            contractMapper,
+            contractEventProducer);
 
     employerId = UUID.randomUUID();
     employerContext = new UserContext(employerId, UserRole.USER, "employer@test.local");
@@ -471,7 +475,7 @@ class ContractServiceTest {
   }
 
   @Test
-  @DisplayName("Should accept contract, set IN_PROGRESS, startedAt, and accept offer")
+  @DisplayName("Should accept contract, set PENDING_ESCROW, publish event, and confirm escrow sets IN_PROGRESS")
   void shouldAcceptContract() {
     Contract contract =
         Contract.builder()
@@ -491,16 +495,44 @@ class ContractServiceTest {
     when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
 
     ContractDetailResponse mockResponse =
-        ContractDetailResponse.builder().status(ContractStatus.IN_PROGRESS).build();
+        ContractDetailResponse.builder().status(ContractStatus.PENDING_ESCROW).build();
     when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
 
     ContractDetailResponse response = contractService.acceptContract(contractId, employeeContext);
 
-    assertThat(response.getStatus()).isEqualTo(ContractStatus.IN_PROGRESS);
+    assertThat(response.getStatus()).isEqualTo(ContractStatus.PENDING_ESCROW);
+    assertThat(contract.getStatus()).isEqualTo(ContractStatus.PENDING_ESCROW);
+    verify(contractEventProducer).publishContractAccepted(any());
+
+    // Confirm escrow triggers activation to IN_PROGRESS
+    contractService.confirmContractEscrow(contractId);
     assertThat(contract.getStatus()).isEqualTo(ContractStatus.IN_PROGRESS);
     assertThat(contract.getStartedAt()).isNotNull();
     assertThat(pendingOffer.getStatus()).isEqualTo(OfferStatus.ACCEPTED);
     verify(offerRepository).save(pendingOffer);
+  }
+
+  @Test
+  @DisplayName("Should compensate contract from PENDING_ESCROW or IN_PROGRESS back to PENDING")
+  void shouldCompensateContract() {
+    Contract contract =
+        Contract.builder()
+            .employer(employer)
+            .employee(employee)
+            .job(job)
+            .status(ContractStatus.PENDING_ESCROW)
+            .startedAt(LocalDateTime.now())
+            .build();
+    UUID contractId = UUID.randomUUID();
+    contract.setId(contractId);
+
+    when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
+    when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    contractService.compensateContract(contractId, "PAYMENT_FAILED");
+
+    assertThat(contract.getStatus()).isEqualTo(ContractStatus.PENDING);
+    assertThat(contract.getStartedAt()).isNull();
   }
 
   @Test

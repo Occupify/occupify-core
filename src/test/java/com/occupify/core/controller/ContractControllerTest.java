@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -249,11 +250,14 @@ class ContractControllerTest {
   }
 
   @Test
-  @DisplayName("POST /contracts/{id}/accept should accept contract")
+  @DisplayName("POST /contracts/{id}/accept should accept contract and return 202 ACCEPTED")
   void shouldAcceptContract() throws Exception {
     UUID contractId = UUID.randomUUID();
     ContractDetailResponse response =
-        ContractDetailResponse.builder().id(contractId).status(ContractStatus.IN_PROGRESS).build();
+        ContractDetailResponse.builder()
+            .id(contractId)
+            .status(ContractStatus.PENDING_ESCROW)
+            .build();
 
     when(contractService.acceptContract(eq(contractId), any())).thenReturn(response);
 
@@ -262,9 +266,33 @@ class ContractControllerTest {
             post(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_ACCEPT, contractId)
                 .header("X-User-Id", userId.toString())
                 .header("X-User-Role", "USER"))
-        .andExpect(status().isOk())
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.statusCode").value(202))
         .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_ACCEPTED))
-        .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"));
+        .andExpect(jsonPath("$.data.status").value("PENDING_ESCROW"));
+  }
+
+  @Test
+  @DisplayName("PUT /contracts/{id}/accept should accept contract and return 202 ACCEPTED")
+  void shouldAcceptContractWithPut() throws Exception {
+    UUID contractId = UUID.randomUUID();
+    ContractDetailResponse response =
+        ContractDetailResponse.builder()
+            .id(contractId)
+            .status(ContractStatus.PENDING_ESCROW)
+            .build();
+
+    when(contractService.acceptContract(eq(contractId), any())).thenReturn(response);
+
+    mockMvc
+        .perform(
+            put(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_ACCEPT, contractId)
+                .header("X-User-Id", userId.toString())
+                .header("X-User-Role", "USER"))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.statusCode").value(202))
+        .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_ACCEPTED))
+        .andExpect(jsonPath("$.data.status").value("PENDING_ESCROW"));
   }
 
   @Test
@@ -287,6 +315,32 @@ class ContractControllerTest {
                 .header("X-User-Id", userId.toString())
                 .header("X-User-Role", "USER"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.statusCode").value(200))
+        .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_REJECTED))
+        .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+  }
+
+  @Test
+  @DisplayName("PUT /contracts/{id}/reject should reject contract")
+  void shouldRejectContractWithPut() throws Exception {
+    UUID contractId = UUID.randomUUID();
+    RejectContractRequest rejectReq =
+        RejectContractRequest.builder().reason("Mức thù lao chưa phù hợp").build();
+
+    ContractDetailResponse response =
+        ContractDetailResponse.builder().id(contractId).status(ContractStatus.CANCELLED).build();
+
+    when(contractService.rejectContract(eq(contractId), any(), any())).thenReturn(response);
+
+    mockMvc
+        .perform(
+            put(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_REJECT, contractId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(rejectReq))
+                .header("X-User-Id", userId.toString())
+                .header("X-User-Role", "USER"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.statusCode").value(200))
         .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_REJECTED))
         .andExpect(jsonPath("$.data.status").value("CANCELLED"));
   }
