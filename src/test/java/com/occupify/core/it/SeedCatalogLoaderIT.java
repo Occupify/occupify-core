@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.occupify.core.seed.SeedCatalogLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,12 +23,15 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
+@ActiveProfiles({"it", "seed"})
 public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
 
   @Autowired private RabbitTemplate rabbitTemplate;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private TestRestTemplate restTemplate;
+  @Autowired private SeedCatalogLoader seedCatalogLoader;
 
   private RabbitAdmin rabbitAdmin;
   private Queue seedCoreQueue;
@@ -40,15 +44,17 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
 
     TopicExchange coreExchange = new TopicExchange("occupify.core.exchange", true, false);
     rabbitAdmin.declareExchange(coreExchange);
-    seedCoreQueue = new Queue("test.seed.core." + UUID.randomUUID(), false, true, true);
+    seedCoreQueue = new Queue("test.seed.core." + UUID.randomUUID(), false, false, false);
     rabbitAdmin.declareQueue(seedCoreQueue);
     rabbitAdmin.declareBinding(BindingBuilder.bind(seedCoreQueue).to(coreExchange).with("#"));
 
     TopicExchange notiExchange = new TopicExchange("occupify.notification.exchange", true, false);
     rabbitAdmin.declareExchange(notiExchange);
-    seedNotiQueue = new Queue("test.seed.noti." + UUID.randomUUID(), false, true, true);
+    seedNotiQueue = new Queue("test.seed.noti." + UUID.randomUUID(), false, false, false);
     rabbitAdmin.declareQueue(seedNotiQueue);
     rabbitAdmin.declareBinding(BindingBuilder.bind(seedNotiQueue).to(notiExchange).with("#"));
+
+    seedCatalogLoader.loadDefaultCatalog();
   }
 
   @AfterEach
@@ -84,7 +90,9 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
     List<Map<String, Object>> beforeJobs =
         jdbcTemplate.queryForList("SELECT id, updated_at, version FROM job ORDER BY id");
 
-    // After simulated second load, rows remain identical
+    // Second load
+    seedCatalogLoader.loadDefaultCatalog();
+
     List<Map<String, Object>> afterProjects =
         jdbcTemplate.queryForList("SELECT id, updated_at, version FROM projects ORDER BY id");
     List<Map<String, Object>> afterJobs =
@@ -119,14 +127,11 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
         ]
         """;
     Path tempFile = Files.createTempFile("bad-catalog-", ".json");
-    Files.writeString(tempFile, badJson, StandardCharsets.UTF_8);
-
-    // In T-10, SeedCatalogLoader validates that every id is a UUID and throws IllegalArgumentException naming the bad id
     try {
-      // Check validation
-      UUID.fromString("not-a-valid-uuid");
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).contains("not-a-valid-uuid");
+      Files.writeString(tempFile, badJson, StandardCharsets.UTF_8);
+      assertThatThrownBy(() -> seedCatalogLoader.loadCatalogFromPath(tempFile))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("not-a-valid-uuid");
     } finally {
       Files.deleteIfExists(tempFile);
     }
@@ -134,8 +139,6 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
 
   @Test
   void rejectsLimitViolations() throws Exception {
-    // Verifies that seeder enforces AC-1 / AC-2 limits:
-    // > 20 requirements, > 300 chars requirement, > 10 tags, > 40 char tag, hoursPerDay > 24
     String limitViolationJson =
         """
         [
@@ -151,8 +154,14 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
         ]
         """.formatted(UUID.randomUUID());
     Path tempFile = Files.createTempFile("limit-violation-", ".json");
-    Files.writeString(tempFile, limitViolationJson, StandardCharsets.UTF_8);
-    Files.deleteIfExists(tempFile);
+    try {
+      Files.writeString(tempFile, limitViolationJson, StandardCharsets.UTF_8);
+      assertThatThrownBy(() -> seedCatalogLoader.loadCatalogFromPath(tempFile))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("hoursPerDay must be between 0.5 and 24.0");
+    } finally {
+      Files.deleteIfExists(tempFile);
+    }
   }
 
   @Test
