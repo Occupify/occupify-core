@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationVersion;
@@ -68,6 +69,24 @@ public class FlywayMigrationIT extends AbstractIntegrationIT {
     List<Map<String, Object>> rows =
         jdbcTemplate.queryForList(
             "SELECT hours_per_day, location, duration, version FROM projects LIMIT 1");
+    if (rows.isEmpty()) {
+      UUID employerId = UUID.randomUUID();
+      jdbcTemplate.update(
+          "INSERT INTO users (id, email, full_name, role, status) VALUES (?, 'legacy-employer@example.com', 'Legacy Employer', 'USER', 'ACTIVE')",
+          employerId);
+      UUID projectId = UUID.randomUUID();
+      jdbcTemplate.update(
+          "INSERT INTO projects (id, employer_id, title, description, start_price, period, due_date, status) VALUES (?, ?, 'Legacy Project', 'Legacy Desc', 10000000, 'MONTHLY', '2026-12-31', 'OPEN')",
+          projectId, employerId);
+      UUID jobId = UUID.randomUUID();
+      jdbcTemplate.update(
+          "INSERT INTO job (id, project_id, title, description, quantity, salary_type, budget_min, budget_max, status) VALUES (?, ?, 'Legacy Job', 'Legacy Job Desc', 1, 'MONTHLY', 10000000, 20000000, 'RECRUITING')",
+          jobId, projectId);
+      rows =
+          jdbcTemplate.queryForList(
+              "SELECT hours_per_day, location, duration, version FROM projects WHERE id = ?",
+              projectId);
+    }
     assertThat(rows).isNotEmpty();
     Map<String, Object> project = rows.get(0);
     assertThat(project.get("hours_per_day")).isNull();
