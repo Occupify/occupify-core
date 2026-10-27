@@ -38,13 +38,9 @@ public class ContractSagaWatchdog {
       return;
     }
 
-    log.warn(
-        "[Saga Watchdog] Found [{}] contracts timed out in PENDING_ESCROW. Tripping compensation.",
-        timedOutContracts.size());
-
     for (Contract contract : timedOutContracts) {
-      log.warn(
-          "[Saga Watchdog] Contract [{}] timed out in PENDING_ESCROW (> {}s). Reverting to PENDING and emitting compensation.",
+      log.error(
+          "Contract [{}] timed out in PENDING_ESCROW (> {}s). Reverting to PENDING and emitting compensation",
           contract.getId(),
           timeoutSeconds);
 

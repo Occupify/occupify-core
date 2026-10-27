@@ -588,21 +588,18 @@ public class ContractServiceImpl implements ContractService {
   public void confirmContractEscrow(UUID contractId) {
     Contract contract = contractRepository.findById(contractId).orElse(null);
     if (contract == null) {
-      log.warn("[Saga Escrow] Contract [{}] not found for activation", contractId);
+      log.error("Contract [{}] not found for activation", contractId);
       return;
     }
 
     if (contract.getStatus() == ContractStatus.PENDING_ESCROW) {
-      log.info(
-          "[Saga Escrow] Escrow confirmed for contract [{}]. Transitioning to IN_PROGRESS",
-          contractId);
       contract.setStatus(ContractStatus.IN_PROGRESS);
       contract.setStartedAt(LocalDateTime.now());
       contractRepository.save(contract);
       acceptPendingOffers(contract.getId());
     } else {
-      log.warn(
-          "[Saga Escrow] Contract [{}] has status [{}], expected PENDING_ESCROW for activation",
+      log.error(
+          "Contract [{}] has status [{}], expected PENDING_ESCROW for activation",
           contractId,
           contract.getStatus());
     }
@@ -612,14 +609,14 @@ public class ContractServiceImpl implements ContractService {
   public void compensateContract(UUID contractId, String reason) {
     Contract contract = contractRepository.findById(contractId).orElse(null);
     if (contract == null) {
-      log.warn("[Saga Compensation] Contract [{}] not found for rollback", contractId);
+      log.error("Contract [{}] not found for rollback", contractId);
       return;
     }
 
     if (contract.getStatus() == ContractStatus.IN_PROGRESS
         || contract.getStatus() == ContractStatus.PENDING_ESCROW) {
-      log.warn(
-          "[Saga Compensation] Rolling back contract [{}] from [{}] to PENDING. Reason: {}",
+      log.error(
+          "Rolling back contract [{}] from [{}] to PENDING. Reason: {}",
           contractId,
           contract.getStatus(),
           reason);
