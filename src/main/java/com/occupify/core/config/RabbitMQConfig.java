@@ -66,6 +66,48 @@ public class RabbitMQConfig {
   @Value("${app.rabbitmq.contract-escrow-locked-routing-key:contract.escrow.locked}")
   private String contractEscrowLockedRoutingKey;
 
+  @Value("${app.rabbitmq.agent-rpc-exchange:occupify.agent.rpc}")
+  private String agentRpcExchangeName;
+
+  @Value("${app.rabbitmq.project-search-queue:occupify.core.rpc.project.search}")
+  private String projectSearchQueueName;
+
+  @Value("${app.rabbitmq.project-search-routing-key:core.project.search}")
+  private String projectSearchRoutingKey;
+
+  @Value("${app.rabbitmq.project-get-queue:occupify.core.rpc.project.get}")
+  private String projectGetQueueName;
+
+  @Value("${app.rabbitmq.project-get-routing-key:core.project.get}")
+  private String projectGetRoutingKey;
+
+  @Bean
+  public DirectExchange agentRpcExchange() {
+    return new DirectExchange(agentRpcExchangeName, true, false);
+  }
+
+  @Bean
+  public Queue projectSearchQueue() {
+    return QueueBuilder.durable(projectSearchQueueName).build();
+  }
+
+  @Bean
+  public Binding projectSearchBinding(Queue projectSearchQueue, DirectExchange agentRpcExchange) {
+    return BindingBuilder.bind(projectSearchQueue)
+        .to(agentRpcExchange)
+        .with(projectSearchRoutingKey);
+  }
+
+  @Bean
+  public Queue projectGetQueue() {
+    return QueueBuilder.durable(projectGetQueueName).build();
+  }
+
+  @Bean
+  public Binding projectGetBinding(Queue projectGetQueue, DirectExchange agentRpcExchange) {
+    return BindingBuilder.bind(projectGetQueue).to(agentRpcExchange).with(projectGetRoutingKey);
+  }
+
   @Bean
   public TopicExchange notificationExchange() {
     return new TopicExchange(exchangeName, true, false);

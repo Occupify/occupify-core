@@ -54,6 +54,11 @@ app:
     contract-rejected-routing-key: ${RABBITMQ_CONTRACT_REJECTED_ROUTING_KEY:contract.rejected}
     contract-core-queue: ${RABBITMQ_CONTRACT_CORE_QUEUE:occupify.core.contract.queue}
     contract-compensation-routing-key: ${RABBITMQ_CONTRACT_COMPENSATION_ROUTING_KEY:contract.compensation.*}
+    agent-rpc-exchange: ${RABBITMQ_AGENT_RPC_EXCHANGE:occupify.agent.rpc}
+    project-search-queue: ${RABBITMQ_PROJECT_SEARCH_QUEUE:occupify.core.rpc.project.search}
+    project-search-routing-key: ${RABBITMQ_PROJECT_SEARCH_ROUTING_KEY:core.project.search}
+    project-get-queue: ${RABBITMQ_PROJECT_GET_QUEUE:occupify.core.rpc.project.get}
+    project-get-routing-key: ${RABBITMQ_PROJECT_GET_ROUTING_KEY:core.project.get}
   auth:
     dev-mock:
       enabled: ${DEV_MOCK_AUTH_ENABLED:false}
