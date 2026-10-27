@@ -2,6 +2,7 @@ package com.occupify.core.repository.contract;
 
 import com.occupify.core.entity.contract.Contract;
 import com.occupify.core.enums.ContractStatus;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface ContractRepository
     extends JpaRepository<Contract, UUID>, JpaSpecificationExecutor<Contract> {
   List<Contract> findByJobId(UUID jobId);
+
+  long countByJobIdAndStatusIn(UUID jobId, Collection<ContractStatus> statuses);
 
   List<Contract> findByEmployerId(UUID employerId);
 
