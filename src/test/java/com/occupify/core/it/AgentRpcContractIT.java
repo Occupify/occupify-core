@@ -21,12 +21,16 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.core.io.ClassPathResource;
+import org.mockito.Mockito;
+import com.occupify.core.service.ProjectService;
 
 public class AgentRpcContractIT extends AbstractIntegrationIT {
 
   @Autowired private RabbitTemplate rabbitTemplate;
   @Autowired private ObjectMapper objectMapper;
+  @SpyBean private ProjectService projectService;
 
   private static final String FIXTURE_DIR = "src/test/resources/contracts/agent-rpc/";
   private static final UUID KNOWN_PROJECT_ID =
@@ -144,16 +148,23 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
       Files.createDirectories(fixturePath.getParent());
       String prettyJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(reply);
       Files.writeString(fixturePath, prettyJson + "\n", StandardCharsets.UTF_8);
-    } else {
-      ClassPathResource resource = new ClassPathResource("contracts/agent-rpc/" + filename);
-      assertThat(resource.exists())
-          .withFailMessage("Fixture file %s does not exist. Run with -Dcontracts.record=true to record it.", filename)
-          .isTrue();
-
-      try (InputStream is = resource.getInputStream()) {
-        JsonNode expected = objectMapper.readTree(is);
-        assertThat(reply).isEqualTo(expected);
+      Path targetClassesPath = Paths.get("target/test-classes/contracts/agent-rpc", filename);
+      if (Files.exists(targetClassesPath.getParent())) {
+        Files.writeString(targetClassesPath, prettyJson + "\n", StandardCharsets.UTF_8);
       }
+    } else {
+      JsonNode expected;
+      ClassPathResource resource = new ClassPathResource("contracts/agent-rpc/" + filename);
+      if (resource.exists()) {
+        try (InputStream is = resource.getInputStream()) {
+          expected = objectMapper.readTree(is);
+        }
+      } else if (Files.exists(fixturePath)) {
+        expected = objectMapper.readTree(Files.readString(fixturePath, StandardCharsets.UTF_8));
+      } else {
+        throw new AssertionError("Fixture file " + filename + " does not exist. Run with -Dcontracts.record=true to record it.");
+      }
+      assertThat(reply).isEqualTo(expected);
     }
   }
 
@@ -182,10 +193,15 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
     handleFixture("get-400.json", badArgReply);
 
     // 6. get-500.json (simulate fixed 500 error reply)
-    // When unexpected error occurs, error reply is fixed 500
-    // We test with empty body that triggers internal error if unhandled or forced
-    JsonNode errReply = sendRpc("core.project.search", "{\"sort\":\"invalid-field\"}");
-    // Wait: for invalid sort, it's 400. For unexpected internal error, let's verify get-500.json fixture
-    // When recording, get-500 will have: {statusCode: 500, errorCode: "INTERNAL_SERVER_ERROR", message: "Failed to process the request"}
+    UUID failId = UUID.fromString("99999999-9999-9999-9999-999999999999");
+    Mockito.doThrow(new RuntimeException("Simulated unexpected internal error"))
+        .when(projectService)
+        .getAgentProject(failId);
+    try {
+      JsonNode errReply = sendRpc("core.project.get", "{\"projectId\":\"" + failId + "\"}");
+      handleFixture("get-500.json", errReply);
+    } finally {
+      Mockito.reset(projectService);
+    }
   }
 }

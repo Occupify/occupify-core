@@ -1,0 +1,5 @@
+{
+  "statusCode" : 404,
+  "message" : "Project not found with ID: 00000000-0000-0000-0000-000000000000",
+  "errorCode" : "PROJ_001"
+}
