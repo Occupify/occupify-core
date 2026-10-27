@@ -186,6 +186,11 @@ public class ProjectServiceImpl implements ProjectService {
               skills,
               openJobsCount,
               jobSummaries,
+              baseResponse.hoursPerDay(),
+              baseResponse.location(),
+              baseResponse.duration(),
+              baseResponse.tags(),
+              baseResponse.version(),
               baseResponse.createdAt(),
               baseResponse.updatedAt());
         });

@@ -30,6 +30,8 @@ public interface ProjectMapper {
   @Mapping(target = "closedAt", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "version", ignore = true)
+  @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTags")
   Project toEntity(CreateProjectRequest request);
 
   @Mapping(target = "employer", source = "employer")
@@ -51,6 +53,11 @@ public interface ProjectMapper {
   @Mapping(target = "startDate", source = "project.startDate")
   @Mapping(target = "endDate", source = "project.endDate")
   @Mapping(target = "closedAt", source = "project.closedAt")
+  @Mapping(target = "hoursPerDay", source = "project.hoursPerDay")
+  @Mapping(target = "location", source = "project.location")
+  @Mapping(target = "duration", source = "project.duration")
+  @Mapping(target = "tags", source = "project.tags")
+  @Mapping(target = "version", source = "project.version")
   @Mapping(target = "createdAt", source = "project.createdAt")
   @Mapping(target = "updatedAt", source = "project.updatedAt")
   ProjectDetailResponse toDetailResponse(Project project, List<JobSummaryResponse> jobs);
@@ -62,6 +69,8 @@ public interface ProjectMapper {
   @Mapping(target = "closedAt", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "version", ignore = true)
+  @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTags")
   void updateEntity(@MappingTarget Project project, UpdateProjectRequest request);
 
   EmployerSummaryResponse toEmployerSummary(User employer);
@@ -98,5 +107,13 @@ public interface ProjectMapper {
       return Set.of();
     }
     return skills.stream().map(Skill::getName).collect(Collectors.toSet());
+  }
+
+  @Named("mapTags")
+  default Set<String> mapTags(List<String> tags) {
+    if (tags == null) {
+      return new java.util.HashSet<>();
+    }
+    return new java.util.HashSet<>(tags);
   }
 }

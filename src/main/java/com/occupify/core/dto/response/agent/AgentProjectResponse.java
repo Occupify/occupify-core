@@ -1,0 +1,33 @@
+package com.occupify.core.dto.response.agent;
+
+import com.occupify.core.enums.ExperienceLevel;
+import com.occupify.core.enums.ProjectPeriod;
+import com.occupify.core.enums.ProjectStatus;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+public record AgentProjectResponse(
+    UUID id,
+    Long version,
+    String title,
+    String description,
+    BigDecimal startPrice,
+    ProjectPeriod period,
+    LocalDate dueDate,
+    ExperienceLevel experienceLevel,
+    ProjectStatus status,
+    LocalDateTime startDate,
+    LocalDateTime endDate,
+    LocalDateTime closedAt,
+    BigDecimal hoursPerDay,
+    String location,
+    String duration,
+    List<String> tags,
+    List<String> skills,
+    Integer openJobsCount,
+    List<AgentJobResponse> jobs,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt) {}
