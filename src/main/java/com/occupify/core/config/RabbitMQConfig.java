@@ -2,6 +2,7 @@ package com.occupify.core.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.occupify.core.event.UserRegisteredEvent;
 import java.util.HashMap;
@@ -27,6 +28,9 @@ public class RabbitMQConfig {
 
   @Value("${app.rabbitmq.exchange:occupify.notification.exchange}")
   private String exchangeName;
+
+  @Value("${app.rabbitmq.core-exchange:occupify.core.exchange}")
+  private String coreExchangeName;
 
   @Value("${app.rabbitmq.user-queue:occupify.core.user.queue}")
   private String userQueueName;
@@ -91,6 +95,11 @@ public class RabbitMQConfig {
   }
 
   @Bean
+  public TopicExchange coreExchange() {
+    return new TopicExchange(coreExchangeName, true, false);
+  }
+
+  @Bean
   public DirectExchange coreDlxExchange() {
     return new DirectExchange(dlxExchangeName, true, false);
   }
@@ -124,6 +133,7 @@ public class RabbitMQConfig {
   public MessageConverter jackson2JsonMessageConverter() {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
+    objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter(objectMapper);
 

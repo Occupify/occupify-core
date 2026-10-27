@@ -4,6 +4,7 @@ import com.occupify.core.entity.job.Job;
 import com.occupify.core.enums.ContractStatus;
 import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.ProjectStatus;
+import com.occupify.core.event.domain.JobStatusChangedDomainEvent;
 import com.occupify.core.repository.contract.ContractRepository;
 import com.occupify.core.repository.job.JobRepository;
 import com.occupify.core.service.JobLifecycleService;
@@ -87,7 +88,7 @@ public class JobLifecycleServiceImpl implements JobLifecycleService {
 
   private void publishStatusChange(Job job, JobStatus oldStatus, JobStatus newStatus) {
     eventPublisher.publishEvent(
-        new JobStatusChangeEvent(
+        new JobStatusChangedDomainEvent(
             UUID.randomUUID(),
             job.getProject() != null ? job.getProject().getId() : null,
             job.getId(),
@@ -96,13 +97,4 @@ public class JobLifecycleServiceImpl implements JobLifecycleService {
             newStatus.name(),
             LocalDateTime.now()));
   }
-
-  public record JobStatusChangeEvent(
-      UUID eventId,
-      UUID projectId,
-      UUID jobId,
-      Long jobVersion,
-      String oldStatus,
-      String newStatus,
-      LocalDateTime occurredAt) {}
 }

@@ -11,6 +11,7 @@ import com.occupify.core.entity.job.Job;
 import com.occupify.core.entity.project.Project;
 import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.ProjectStatus;
+import com.occupify.core.event.domain.JobStatusChangedDomainEvent;
 import com.occupify.core.repository.contract.ContractRepository;
 import com.occupify.core.repository.job.JobRepository;
 import com.occupify.core.service.impl.JobLifecycleServiceImpl;
@@ -57,7 +58,7 @@ public class JobLifecycleServiceTest {
 
     assertThat(job.getStatus()).isEqualTo(JobStatus.FILLED);
     verify(jobRepository).save(job);
-    verify(eventPublisher).publishEvent(any(JobLifecycleServiceImpl.JobStatusChangeEvent.class));
+    verify(eventPublisher).publishEvent(any(JobStatusChangedDomainEvent.class));
   }
 
   @Test
@@ -80,7 +81,7 @@ public class JobLifecycleServiceTest {
 
     assertThat(job.getStatus()).isEqualTo(JobStatus.RECRUITING);
     verify(jobRepository).save(job);
-    verify(eventPublisher).publishEvent(any(JobLifecycleServiceImpl.JobStatusChangeEvent.class));
+    verify(eventPublisher).publishEvent(any(JobStatusChangedDomainEvent.class));
   }
 
   @Test

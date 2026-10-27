@@ -15,6 +15,9 @@ import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.ProjectStatus;
 import com.occupify.core.event.ProjectClosedEvent;
 import com.occupify.core.event.ProjectCreatedEvent;
+import com.occupify.core.event.domain.ProjectClosedDomainEvent;
+import com.occupify.core.event.domain.ProjectCreatedDomainEvent;
+import com.occupify.core.event.domain.ProjectUpdatedDomainEvent;
 import com.occupify.core.exception.project.ProjectErrorCode;
 import com.occupify.core.exception.project.ProjectException;
 import com.occupify.core.exception.system.SystemErrorCode;
@@ -39,6 +42,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -61,6 +65,7 @@ public class ProjectServiceImpl implements ProjectService {
   private final ProjectEventProducer projectEventProducer;
   private final AgentProjectMapper agentProjectMapper;
   private final JobLifecycleService jobLifecycleService;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   @Transactional
@@ -88,6 +93,13 @@ public class ProjectServiceImpl implements ProjectService {
     project.setEmployer(employer);
 
     Project saved = projectRepository.save(project);
+
+    applicationEventPublisher.publishEvent(
+        new ProjectCreatedDomainEvent(
+            UUID.randomUUID(),
+            saved.getId(),
+            saved.getVersion() != null ? saved.getVersion() : 0L,
+            saved.getCreatedAt() != null ? saved.getCreatedAt() : LocalDateTime.now()));
 
     projectEventProducer.publishProjectCreated(
         new ProjectCreatedEvent(
@@ -285,6 +297,13 @@ public class ProjectServiceImpl implements ProjectService {
     projectMapper.updateEntity(project, request);
     Project updated = projectRepository.saveAndFlush(project);
 
+    applicationEventPublisher.publishEvent(
+        new ProjectUpdatedDomainEvent(
+            UUID.randomUUID(),
+            updated.getId(),
+            updated.getVersion() != null ? updated.getVersion() : 0L,
+            updated.getUpdatedAt() != null ? updated.getUpdatedAt() : LocalDateTime.now()));
+
     return projectMapper.toResponse(updated);
   }
 
@@ -312,6 +331,13 @@ public class ProjectServiceImpl implements ProjectService {
     Project closed = projectRepository.saveAndFlush(project);
 
     jobLifecycleService.closeProjectJobs(closed.getId());
+
+    applicationEventPublisher.publishEvent(
+        new ProjectClosedDomainEvent(
+            UUID.randomUUID(),
+            closed.getId(),
+            closed.getVersion() != null ? closed.getVersion() : 0L,
+            closed.getClosedAt() != null ? closed.getClosedAt() : LocalDateTime.now()));
 
     projectEventProducer.publishProjectClosed(
         new ProjectClosedEvent(

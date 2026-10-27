@@ -52,7 +52,7 @@ public class CoreEventsIT extends AbstractIntegrationIT {
     TopicExchange coreExchange = new TopicExchange("occupify.core.exchange", true, false);
     rabbitAdmin.declareExchange(coreExchange);
 
-    coreEventsQueue = new Queue("test.core.events.queue." + UUID.randomUUID(), false, true, true);
+    coreEventsQueue = new Queue("test.core.events.queue." + UUID.randomUUID(), false, false, false);
     rabbitAdmin.declareQueue(coreEventsQueue);
     rabbitAdmin.declareBinding(
         BindingBuilder.bind(coreEventsQueue).to(coreExchange).with("project.*"));
@@ -62,7 +62,7 @@ public class CoreEventsIT extends AbstractIntegrationIT {
     TopicExchange notiExchange = new TopicExchange("occupify.notification.exchange", true, false);
     rabbitAdmin.declareExchange(notiExchange);
 
-    notiEventsQueue = new Queue("test.noti.events.queue." + UUID.randomUUID(), false, true, true);
+    notiEventsQueue = new Queue("test.noti.events.queue." + UUID.randomUUID(), false, false, false);
     rabbitAdmin.declareQueue(notiEventsQueue);
     rabbitAdmin.declareBinding(
         BindingBuilder.bind(notiEventsQueue).to(notiExchange).with("#"));
