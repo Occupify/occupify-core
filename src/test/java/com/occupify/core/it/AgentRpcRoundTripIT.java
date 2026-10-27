@@ -177,6 +177,9 @@ public class AgentRpcRoundTripIT extends AbstractIntegrationIT {
     doThrow(new RuntimeException("Sensitive database connection details"))
         .when(projectService)
         .getProjects(any(), any());
+    doThrow(new RuntimeException("Sensitive database connection details"))
+        .when(projectService)
+        .getAgentProjects(any(), any());
 
     JsonNode reply = sendRpc("core.project.search", "{\"page\":0,\"size\":5}");
     assertThat(reply.get("statusCode").asInt()).isEqualTo(500);
