@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -27,23 +29,47 @@ public class ProjectEventProducerImpl implements ProjectEventProducer {
 
   @Override
   public void publishProjectCreated(ProjectCreatedEvent event) {
-    log.info(
-        "[Event Producer] Publishing ProjectCreatedEvent for project [{}] ('{}') to exchange [{}] with routingKey [{}]",
-        event.projectId(),
-        event.title(),
-        exchange,
-        projectCreatedRoutingKey);
-    rabbitTemplate.convertAndSend(exchange, projectCreatedRoutingKey, event);
+    Runnable publishAction =
+        () -> {
+          log.info(
+              "[Event Producer] Publishing ProjectCreatedEvent for project [{}] ('{}') to exchange [{}] with routingKey [{}]",
+              event.projectId(),
+              event.title(),
+              exchange,
+              projectCreatedRoutingKey);
+          rabbitTemplate.convertAndSend(exchange, projectCreatedRoutingKey, event);
+        };
+
+    executeOrDefer(publishAction);
   }
 
   @Override
   public void publishProjectClosed(ProjectClosedEvent event) {
-    log.info(
-        "[Event Producer] Publishing ProjectClosedEvent for project [{}] ('{}') to exchange [{}] with routingKey [{}]",
-        event.projectId(),
-        event.title(),
-        exchange,
-        projectClosedRoutingKey);
-    rabbitTemplate.convertAndSend(exchange, projectClosedRoutingKey, event);
+    Runnable publishAction =
+        () -> {
+          log.info(
+              "[Event Producer] Publishing ProjectClosedEvent for project [{}] ('{}') to exchange [{}] with routingKey [{}]",
+              event.projectId(),
+              event.title(),
+              exchange,
+              projectClosedRoutingKey);
+          rabbitTemplate.convertAndSend(exchange, projectClosedRoutingKey, event);
+        };
+
+    executeOrDefer(publishAction);
+  }
+
+  private void executeOrDefer(Runnable action) {
+    if (TransactionSynchronizationManager.isActualTransactionActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              action.run();
+            }
+          });
+    } else {
+      action.run();
+    }
   }
 }

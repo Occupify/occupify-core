@@ -1,7 +1,7 @@
 package com.occupify.core.event;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record ProjectCreatedEvent(
@@ -11,5 +11,5 @@ public record ProjectCreatedEvent(
     String status,
     UUID employerId,
     String employerEmail,
-    LocalDateTime createdAt)
+    Instant createdAt)
     implements Serializable {}
