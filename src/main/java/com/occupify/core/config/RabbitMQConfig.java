@@ -1,5 +1,6 @@
 package com.occupify.core.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.occupify.core.event.UserRegisteredEvent;
@@ -42,6 +43,48 @@ public class RabbitMQConfig {
   @Value("${app.rabbitmq.dlq-routing-key:user.dlq}")
   private String dlqRoutingKey;
 
+  @Value("${app.rabbitmq.agent-rpc-exchange:occupify.agent.rpc}")
+  private String agentRpcExchangeName;
+
+  @Value("${app.rabbitmq.project-search-queue:occupify.core.rpc.project.search}")
+  private String projectSearchQueueName;
+
+  @Value("${app.rabbitmq.project-search-routing-key:core.project.search}")
+  private String projectSearchRoutingKey;
+
+  @Value("${app.rabbitmq.project-get-queue:occupify.core.rpc.project.get}")
+  private String projectGetQueueName;
+
+  @Value("${app.rabbitmq.project-get-routing-key:core.project.get}")
+  private String projectGetRoutingKey;
+
+  @Bean
+  public DirectExchange agentRpcExchange() {
+    return new DirectExchange(agentRpcExchangeName, true, false);
+  }
+
+  @Bean
+  public Queue projectSearchQueue() {
+    return QueueBuilder.durable(projectSearchQueueName).build();
+  }
+
+  @Bean
+  public Binding projectSearchBinding(Queue projectSearchQueue, DirectExchange agentRpcExchange) {
+    return BindingBuilder.bind(projectSearchQueue)
+        .to(agentRpcExchange)
+        .with(projectSearchRoutingKey);
+  }
+
+  @Bean
+  public Queue projectGetQueue() {
+    return QueueBuilder.durable(projectGetQueueName).build();
+  }
+
+  @Bean
+  public Binding projectGetBinding(Queue projectGetQueue, DirectExchange agentRpcExchange) {
+    return BindingBuilder.bind(projectGetQueue).to(agentRpcExchange).with(projectGetRoutingKey);
+  }
+
   @Bean
   public TopicExchange notificationExchange() {
     return new TopicExchange(exchangeName, true, false);
@@ -81,6 +124,7 @@ public class RabbitMQConfig {
   public MessageConverter jackson2JsonMessageConverter() {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
+    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter(objectMapper);
 
     DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
