@@ -72,7 +72,9 @@ public abstract class AbstractIntegrationIT {
             "job",
             "project_skills",
             "project_tag",
-            "projects");
+            "projects",
+            "users",
+            "skills");
     for (String table : tables) {
       try {
         jdbcTemplate.execute("TRUNCATE TABLE " + table + " CASCADE");

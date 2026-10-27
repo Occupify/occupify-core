@@ -5,6 +5,7 @@ import com.occupify.core.dto.request.ProjectFilterRequest;
 import com.occupify.core.dto.request.UpdateProjectRequest;
 import com.occupify.core.dto.response.ProjectDetailResponse;
 import com.occupify.core.dto.response.ProjectResponse;
+import com.occupify.core.dto.response.agent.AgentProjectResponse;
 import com.occupify.core.security.UserContext;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,10 @@ public interface ProjectService {
   ProjectDetailResponse getProjectDetail(UUID id);
 
   Page<ProjectResponse> getProjects(ProjectFilterRequest filter, Pageable pageable);
+
+  AgentProjectResponse getAgentProject(UUID id);
+
+  Page<AgentProjectResponse> getAgentProjects(ProjectFilterRequest filter, Pageable pageable);
 
   ProjectResponse updateProject(UUID id, UpdateProjectRequest request, UserContext userContext);
 

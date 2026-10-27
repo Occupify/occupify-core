@@ -6,6 +6,7 @@ import com.occupify.core.dto.request.UpdateProjectRequest;
 import com.occupify.core.dto.response.JobSummaryResponse;
 import com.occupify.core.dto.response.ProjectDetailResponse;
 import com.occupify.core.dto.response.ProjectResponse;
+import com.occupify.core.dto.response.agent.AgentProjectResponse;
 import com.occupify.core.entity.job.Job;
 import com.occupify.core.entity.project.Project;
 import com.occupify.core.entity.skill.Skill;
@@ -18,6 +19,7 @@ import com.occupify.core.exception.project.ProjectErrorCode;
 import com.occupify.core.exception.project.ProjectException;
 import com.occupify.core.exception.system.SystemErrorCode;
 import com.occupify.core.exception.system.SystemException;
+import com.occupify.core.mapper.AgentProjectMapper;
 import com.occupify.core.mapper.ProjectMapper;
 import com.occupify.core.producer.ProjectEventProducer;
 import com.occupify.core.repository.bid.BidRepository;
@@ -26,6 +28,7 @@ import com.occupify.core.repository.project.ProjectRepository;
 import com.occupify.core.repository.project.ProjectSpecification;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
+import com.occupify.core.service.JobLifecycleService;
 import com.occupify.core.service.ProjectService;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -37,7 +40,9 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +59,8 @@ public class ProjectServiceImpl implements ProjectService {
   private final UserRepository userRepository;
   private final ProjectMapper projectMapper;
   private final ProjectEventProducer projectEventProducer;
+  private final AgentProjectMapper agentProjectMapper;
+  private final JobLifecycleService jobLifecycleService;
 
   @Override
   @Transactional
@@ -197,6 +204,70 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   @Override
+  public AgentProjectResponse getAgentProject(UUID id) {
+    log.info("[ProjectService] Retrieving agent project details for ID [{}]", id);
+    Project project =
+        projectRepository
+            .findById(id)
+            .orElseThrow(
+                () ->
+                    new ProjectException(
+                        ProjectErrorCode.PROJECT_NOT_FOUND, "Project not found with ID: " + id));
+
+    List<Job> jobs = jobRepository.findWithSkillsByProjectId(id);
+    List<UUID> jobIds = jobs.stream().map(Job::getId).toList();
+    Map<UUID, Integer> bidCountsByJobId =
+        jobIds.isEmpty()
+            ? Map.of()
+            : bidRepository.countBidsByJobIdIn(jobIds).stream()
+                .collect(
+                    Collectors.toMap(row -> (UUID) row[0], row -> ((Number) row[1]).intValue()));
+
+    return agentProjectMapper.toResponse(project, jobs, bidCountsByJobId);
+  }
+
+  @Override
+  public Page<AgentProjectResponse> getAgentProjects(
+      ProjectFilterRequest filter, Pageable pageable) {
+    log.info("[ProjectService] Querying agent projects with filters: {}", filter);
+
+    Sort sort = pageable.getSort();
+    if (sort.isUnsorted()) {
+      sort = Sort.by(Sort.Order.asc("id"));
+    } else if (sort.getOrderFor("id") == null) {
+      sort = sort.and(Sort.by(Sort.Order.asc("id")));
+    }
+    Pageable effectivePageable =
+        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+    Specification<Project> spec = ProjectSpecification.withFilters(filter);
+    Page<Project> page = projectRepository.findAll(spec, effectivePageable);
+
+    if (page.isEmpty()) {
+      return page.map(p -> agentProjectMapper.toResponse(p, List.of(), Map.of()));
+    }
+
+    List<UUID> projectIds = page.getContent().stream().map(Project::getId).toList();
+    List<Job> allJobs = jobRepository.findWithSkillsByProjectIdIn(projectIds);
+    List<UUID> jobIds = allJobs.stream().map(Job::getId).toList();
+    Map<UUID, Integer> bidCountsByJobId =
+        jobIds.isEmpty()
+            ? Map.of()
+            : bidRepository.countBidsByJobIdIn(jobIds).stream()
+                .collect(
+                    Collectors.toMap(row -> (UUID) row[0], row -> ((Number) row[1]).intValue()));
+
+    Map<UUID, List<Job>> jobsByProjectId =
+        allJobs.stream().collect(Collectors.groupingBy(job -> job.getProject().getId()));
+
+    return page.map(
+        project -> {
+          List<Job> projectJobs = jobsByProjectId.getOrDefault(project.getId(), List.of());
+          return agentProjectMapper.toResponse(project, projectJobs, bidCountsByJobId);
+        });
+  }
+
+  @Override
   @Transactional
   public ProjectResponse updateProject(
       UUID id, UpdateProjectRequest request, UserContext userContext) {
@@ -212,7 +283,7 @@ public class ProjectServiceImpl implements ProjectService {
     checkProjectOwner(project, userContext);
 
     projectMapper.updateEntity(project, request);
-    Project updated = projectRepository.save(project);
+    Project updated = projectRepository.saveAndFlush(project);
 
     return projectMapper.toResponse(updated);
   }
@@ -238,7 +309,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     project.setStatus(ProjectStatus.CLOSED);
     project.setClosedAt(LocalDateTime.now());
-    Project closed = projectRepository.save(project);
+    Project closed = projectRepository.saveAndFlush(project);
+
+    jobLifecycleService.closeProjectJobs(closed.getId());
 
     projectEventProducer.publishProjectClosed(
         new ProjectClosedEvent(

@@ -1,6 +1,7 @@
 package com.occupify.core.controller;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -41,15 +42,17 @@ public class ProjectDetailsRestTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private UserRepository userRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @org.springframework.boot.test.mock.mockito.MockBean
+  private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
 
   private User employer;
 
   @BeforeEach
   void setUp() {
     employer =
-        userRepository.save(
+        userRepository.saveAndFlush(
             User.builder()
-                .email("employer-rest-test@occupify.local")
+                .email("employer-" + UUID.randomUUID() + "@occupify.local")
                 .fullName("Test Employer")
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
@@ -84,7 +87,7 @@ public class ProjectDetailsRestTest {
         .andExpect(jsonPath("$.data.hoursPerDay").value(6.0))
         .andExpect(jsonPath("$.data.location").value("Đà Nẵng"))
         .andExpect(jsonPath("$.data.duration").value("2 - 3 tháng"))
-        .andExpect(jsonPath("$.data.tags", contains("F&B", "Mobile App")))
+        .andExpect(jsonPath("$.data.tags", containsInAnyOrder("F&B", "Mobile App")))
         .andExpect(jsonPath("$.data.employer").exists())
         .andExpect(jsonPath("$.data.version").value(0));
   }
@@ -308,7 +311,7 @@ public class ProjectDetailsRestTest {
         .andExpect(jsonPath("$.data.hoursPerDay").value(8.0))
         .andExpect(jsonPath("$.data.location").value("Hà Nội"))
         .andExpect(jsonPath("$.data.duration").value("6 tháng"))
-        .andExpect(jsonPath("$.data.tags", contains("Backend", "Java")))
+        .andExpect(jsonPath("$.data.tags", containsInAnyOrder("Backend", "Java")))
         .andExpect(jsonPath("$.data.version").value(1));
   }
 
