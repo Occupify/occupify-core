@@ -8,7 +8,6 @@ import com.occupify.core.event.ContractCompensationRequestedEvent;
 import com.occupify.core.event.ContractEscrowLockedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
 import com.occupify.core.event.UserActivatedEvent;
-import com.occupify.core.event.UserRegisteredEvent;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.amqp.core.Binding;
@@ -195,10 +194,6 @@ public class RabbitMQConfig {
     idClassMapping.put("com.occupify.identity.event.UserActivatedEvent", UserActivatedEvent.class);
     idClassMapping.put("com.occupify.core.event.UserActivatedEvent", UserActivatedEvent.class);
     idClassMapping.put("UserActivatedEvent", UserActivatedEvent.class);
-    idClassMapping.put(
-        "com.occupify.identity.event.UserRegisteredEvent", UserRegisteredEvent.class);
-    idClassMapping.put("com.occupify.core.event.UserRegisteredEvent", UserRegisteredEvent.class);
-    idClassMapping.put("UserRegisteredEvent", UserRegisteredEvent.class);
     idClassMapping.put(
         "com.occupify.core.event.ContractAcceptedEvent", ContractAcceptedEvent.class);
     idClassMapping.put("ContractAcceptedEvent", ContractAcceptedEvent.class);

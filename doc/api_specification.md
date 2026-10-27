@@ -397,5 +397,4 @@ Every API endpoint returns a standardized response envelope:
 ### Consumed Events
 | Event | Exchange | Routing Key | Queue | Action |
 | :--- | :--- | :--- | :--- | :--- |
-| `UserRegisteredEvent` | `occupify.notification.exchange` | `user.registered` | `occupify.core.user.queue` | Pre-provisions local `User` mirror entity. |
-| `UserActivatedEvent` | `occupify.user.exchange` | `user.activated` | `occupify.core.user.queue` | Activates local user status to `ACTIVE`. |
+| `UserActivatedEvent` | `occupify.user.exchange` | `user.activated` | `occupify.core.user.queue` | Synchronizes activated user profile and role into core database. |
