@@ -20,15 +20,18 @@ COMPOSE ?= $(shell \
 		echo "docker compose"; \
 	fi)
 
-.PHONY: help up infra down
+PROFILES ?= dev
+
+.PHONY: help up infra down test-it
 
 help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  infra   Start background services (PostgreSQL, RabbitMQ) with $(COMPOSE)"
-	@echo "  up      Run the Spring Boot application in development mode"
-	@echo "  down    Stop and remove containers and volumes"
+	@echo "  infra    Start background services (PostgreSQL, RabbitMQ) with $(COMPOSE)"
+	@echo "  up       Run the Spring Boot application (profiles: $(PROFILES))"
+	@echo "  down     Stop and remove containers and volumes"
+	@echo "  test-it  Run all tests and integration tests with Testcontainers"
 	@echo ""
 	@echo "Detected compose tool: $(COMPOSE)"
 
@@ -36,7 +39,11 @@ infra:
 	@$(COMPOSE) --env-file core.env up -d
 
 up:
-	@./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+	@./mvnw spring-boot:run -Dspring-boot.run.profiles=$(PROFILES)
 
 down:
 	@$(COMPOSE) down -v
+
+test-it:
+	./mvnw clean verify
+
