@@ -86,6 +86,8 @@ public class ProjectServiceImpl implements ProjectService {
         new ProjectCreatedEvent(
             saved.getId(),
             saved.getTitle(),
+            saved.getDescription(),
+            saved.getStatus() != null ? saved.getStatus().name() : null,
             employer.getId(),
             employer.getEmail(),
             saved.getCreatedAt()));

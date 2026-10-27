@@ -38,6 +38,7 @@ spring:
 app:
   rabbitmq:
     exchange: ${RABBITMQ_NOTIFICATION_EXCHANGE:occupify.notification.exchange}
+    project-exchange: ${RABBITMQ_PROJECT_EXCHANGE:occupify.project.exchange}
     user-exchange: ${RABBITMQ_USER_EXCHANGE:occupify.user.exchange}
     project-created-routing-key: ${RABBITMQ_PROJECT_CREATED_ROUTING_KEY:project.created}
     project-closed-routing-key: ${RABBITMQ_PROJECT_CLOSED_ROUTING_KEY:project.closed}

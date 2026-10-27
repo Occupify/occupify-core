@@ -16,7 +16,7 @@ public class ProjectEventProducerImpl implements ProjectEventProducer {
 
   private final RabbitTemplate rabbitTemplate;
 
-  @Value("${app.rabbitmq.exchange:occupify.notification.exchange}")
+  @Value("${app.rabbitmq.project-exchange:occupify.project.exchange}")
   private String exchange;
 
   @Value("${app.rabbitmq.project-created-routing-key:project.created}")

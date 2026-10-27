@@ -33,6 +33,9 @@ public class RabbitMQConfig {
   @Value("${app.rabbitmq.exchange:occupify.notification.exchange}")
   private String exchangeName;
 
+  @Value("${app.rabbitmq.project-exchange:occupify.project.exchange}")
+  private String projectExchangeName;
+
   @Value("${app.rabbitmq.user-exchange:occupify.user.exchange}")
   private String userExchangeName;
 
@@ -66,6 +69,11 @@ public class RabbitMQConfig {
   @Bean
   public TopicExchange notificationExchange() {
     return new TopicExchange(exchangeName, true, false);
+  }
+
+  @Bean
+  public TopicExchange projectExchange() {
+    return new TopicExchange(projectExchangeName, true, false);
   }
 
   @Bean

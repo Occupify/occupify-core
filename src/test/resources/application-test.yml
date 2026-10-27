@@ -17,6 +17,7 @@ spring:
 app:
   rabbitmq:
     exchange: occupify.notification.exchange
+    project-exchange: occupify.project.exchange
     user-exchange: occupify.user.exchange
     user-queue: occupify.core.user.queue
     user-activated-routing-key: user.activated
