@@ -40,6 +40,33 @@ class UserTest {
   }
 
   @Test
+  void testUserBuilderWithAllFields() {
+    UUID id = UUID.randomUUID();
+    LocalDateTime now = LocalDateTime.now();
+    User user =
+        User.builder()
+            .id(id)
+            .email("builder@example.com")
+            .fullName("Builder User")
+            .avatarUrl("https://example.com/avatar2.png")
+            .role(UserRole.ADMIN)
+            .status(UserStatus.ACTIVE)
+            .createdAt(now)
+            .updatedAt(now)
+            .deletedAt(now)
+            .build();
+
+    assertEquals(id, user.getId());
+    assertEquals("builder@example.com", user.getEmail());
+    assertEquals("Builder User", user.getFullName());
+    assertEquals(UserRole.ADMIN, user.getRole());
+    assertEquals(UserStatus.ACTIVE, user.getStatus());
+    assertEquals(now, user.getCreatedAt());
+    assertEquals(now, user.getUpdatedAt());
+    assertEquals(now, user.getDeletedAt());
+  }
+
+  @Test
   void testUserWithNullOptionalFields() {
     UUID id = UUID.randomUUID();
     User user =
