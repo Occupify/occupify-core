@@ -6,6 +6,8 @@ import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -27,10 +29,19 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 
   List<Job> findByProjectIdIn(List<UUID> projectIds);
 
-  @EntityGraph(attributePaths = {"project", "project.employer"})
-  Optional<Job> findWithProjectById(UUID id);
-
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT j FROM Job j WHERE j.id = :id")
   Optional<Job> findForUpdateById(@Param("id") UUID id);
+
+  List<Job> findByProjectIdAndDeletedAtIsNull(UUID projectId);
+
+  Page<Job> findByProjectIdAndDeletedAtIsNull(UUID projectId, Pageable pageable);
+
+  Optional<Job> findByIdAndDeletedAtIsNull(UUID id);
+
+  @EntityGraph(attributePaths = {"project", "project.employer", "skills"})
+  Optional<Job> findWithProjectById(UUID id);
+
+  @EntityGraph(attributePaths = {"project", "project.employer", "skills"})
+  Optional<Job> findWithProjectByIdAndDeletedAtIsNull(UUID id);
 }
