@@ -4,6 +4,7 @@ import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.SalaryType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,5 +20,8 @@ public record JobSummaryResponse(
     JobStatus status,
     Integer bidCount,
     Set<String> skills,
+    List<String> requirements,
+    Long version,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}
+

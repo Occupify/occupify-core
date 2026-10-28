@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public record ProjectDetailResponse(
@@ -23,5 +24,11 @@ public record ProjectDetailResponse(
     LocalDateTime closedAt,
     EmployerSummaryResponse employer,
     List<JobSummaryResponse> jobs,
+    BigDecimal hoursPerDay,
+    String location,
+    String duration,
+    Set<String> tags,
+    Long version,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}
+

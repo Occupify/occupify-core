@@ -1,0 +1,43 @@
+{
+  "statusCode" : 200,
+  "message" : "Project retrieved successfully",
+  "data" : {
+    "id" : "22222222-2222-2222-2222-222222222222",
+    "version" : 0,
+    "title" : "Sparse Sample Project",
+    "description" : "Sparse description",
+    "startPrice" : 1.0E7,
+    "period" : "MONTHLY",
+    "dueDate" : "2026-12-31",
+    "experienceLevel" : null,
+    "status" : "OPEN",
+    "startDate" : null,
+    "endDate" : null,
+    "closedAt" : null,
+    "hoursPerDay" : null,
+    "location" : null,
+    "duration" : null,
+    "tags" : [ ],
+    "skills" : [ ],
+    "openJobsCount" : 1,
+    "jobs" : [ {
+      "id" : "22222222-2222-2222-2222-222222222223",
+      "version" : 0,
+      "projectId" : "22222222-2222-2222-2222-222222222222",
+      "title" : "Junior Developer",
+      "description" : "Sparse job",
+      "quantity" : 1,
+      "salaryType" : "MONTHLY",
+      "budgetMin" : 8000000.0,
+      "budgetMax" : 1.2E7,
+      "status" : "RECRUITING",
+      "bidCount" : 0,
+      "skills" : [ ],
+      "requirements" : [ ],
+      "createdAt" : "<ts>",
+      "updatedAt" : "<ts>"
+    } ],
+    "createdAt" : "<ts>",
+    "updatedAt" : "<ts>"
+  }
+}

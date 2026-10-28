@@ -5,7 +5,9 @@ import com.occupify.core.entity.project.Project;
 import com.occupify.core.entity.skill.Skill;
 import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.SalaryType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -14,15 +16,20 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 @Getter
 @Setter
@@ -62,10 +69,23 @@ public class Job extends AbstractBaseEntity {
   private JobStatus status;
 
   @Builder.Default
+  @BatchSize(size = 50)
   @ManyToMany
   @JoinTable(
       name = "job_skills",
       joinColumns = @JoinColumn(name = "job_id"),
       inverseJoinColumns = @JoinColumn(name = "skill_id"))
   private Set<Skill> skills = new HashSet<>();
+
+  @Builder.Default
+  @ElementCollection
+  @CollectionTable(name = "job_requirement", joinColumns = @JoinColumn(name = "job_id"))
+  @OrderColumn(name = "position")
+  @Column(name = "text", length = 300)
+  @BatchSize(size = 50)
+  private List<String> requirements = new ArrayList<>();
+
+  @Version
+  @Column(name = "version", nullable = false)
+  private Long version;
 }

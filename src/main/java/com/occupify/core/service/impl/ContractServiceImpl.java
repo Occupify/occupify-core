@@ -32,6 +32,7 @@ import com.occupify.core.repository.review.ReviewRepository;
 import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ContractService;
+import com.occupify.core.service.JobLifecycleService;
 import com.occupify.core.service.StorageService;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -64,6 +65,7 @@ public class ContractServiceImpl implements ContractService {
   private final ReviewRepository reviewRepository;
   private final StorageService storageService;
   private final ContractMapper contractMapper;
+  private final JobLifecycleService jobLifecycleService;
 
   @Override
   public ContractDetailResponse createContract(
@@ -254,6 +256,10 @@ public class ContractServiceImpl implements ContractService {
 
     expirePendingOffers(contract.getId());
 
+    if (contract.getJob() != null) {
+      jobLifecycleService.recompute(contract.getJob().getId());
+    }
+
     String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
     String evidenceFileUrl = null;
     if (cancellation.getEvidenceFileKey() != null) {
@@ -288,6 +294,10 @@ public class ContractServiceImpl implements ContractService {
     contract = contractRepository.save(contract);
 
     acceptPendingOffers(contract.getId());
+
+    if (contract.getJob() != null) {
+      jobLifecycleService.recompute(contract.getJob().getId());
+    }
 
     String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
     return contractMapper.toDetailResponse(contract, termsFileUrl, null);

@@ -37,6 +37,8 @@ class ProjectResponseDtoTest {
             JobStatus.RECRUITING,
             3,
             Set.of("Java"),
+            List.of("Req 1"),
+            0L,
             LocalDateTime.now(),
             LocalDateTime.now());
 
@@ -57,6 +59,11 @@ class ProjectResponseDtoTest {
             Set.of("Java", "React"),
             1,
             List.of(job),
+            BigDecimal.valueOf(8.0),
+            "Hà Nội",
+            "3 tháng",
+            Set.of("Tag1"),
+            0L,
             LocalDateTime.now(),
             LocalDateTime.now());
 

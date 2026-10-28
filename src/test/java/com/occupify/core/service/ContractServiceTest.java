@@ -66,6 +66,7 @@ class ContractServiceTest {
   private ReviewRepository reviewRepository;
   private StorageService storageService;
   private ContractMapper contractMapper;
+  private JobLifecycleService jobLifecycleService;
 
   private ContractService contractService;
 
@@ -88,6 +89,7 @@ class ContractServiceTest {
     reviewRepository = mock(ReviewRepository.class);
     storageService = mock(StorageService.class);
     contractMapper = mock(ContractMapper.class);
+    jobLifecycleService = mock(JobLifecycleService.class);
 
     contractService =
         new ContractServiceImpl(
@@ -99,7 +101,8 @@ class ContractServiceTest {
             offerRepository,
             reviewRepository,
             storageService,
-            contractMapper);
+            contractMapper,
+            jobLifecycleService);
 
     employerId = UUID.randomUUID();
     employerContext = new UserContext(employerId, UserRole.USER, "employer@test.local");

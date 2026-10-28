@@ -1,0 +1,5 @@
+{
+  "statusCode" : 500,
+  "message" : "Failed to process the request",
+  "errorCode" : "INTERNAL_SERVER_ERROR"
+}
