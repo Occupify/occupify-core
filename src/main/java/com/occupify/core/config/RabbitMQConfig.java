@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.occupify.core.event.ContractAcceptedEvent;
 import com.occupify.core.event.ContractCompensationRequestedEvent;
+import com.occupify.core.event.ContractCreatedEvent;
 import com.occupify.core.event.ContractEscrowLockedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
 import com.occupify.core.event.UserActivatedEvent;
@@ -204,6 +205,9 @@ public class RabbitMQConfig {
     idClassMapping.put("com.occupify.identity.event.UserActivatedEvent", UserActivatedEvent.class);
     idClassMapping.put("com.occupify.core.event.UserActivatedEvent", UserActivatedEvent.class);
     idClassMapping.put("UserActivatedEvent", UserActivatedEvent.class);
+    idClassMapping.put(
+        "com.occupify.core.event.ContractCreatedEvent", ContractCreatedEvent.class);
+    idClassMapping.put("ContractCreatedEvent", ContractCreatedEvent.class);
     idClassMapping.put(
         "com.occupify.core.event.ContractAcceptedEvent", ContractAcceptedEvent.class);
     idClassMapping.put("ContractAcceptedEvent", ContractAcceptedEvent.class);

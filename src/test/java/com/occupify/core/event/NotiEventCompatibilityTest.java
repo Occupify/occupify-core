@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -24,11 +25,11 @@ public class NotiEventCompatibilityTest {
   void projectEventsReadableWithPlainJavaTimeMapper() throws Exception {
     UUID projectId = UUID.randomUUID();
     UUID employerId = UUID.randomUUID();
-    LocalDateTime now = LocalDateTime.of(2026, 10, 27, 14, 30, 45);
+    Instant now = Instant.parse("2026-10-27T14:30:45Z");
 
     ProjectCreatedEvent createdEvent =
         new ProjectCreatedEvent(
-            projectId, "Dự án Thiết kế UI/UX", employerId, "employer@example.com", now);
+            projectId, "Dự án Thiết kế UI/UX", "Mô tả dự án", "OPEN", employerId, "employer@example.com", now);
 
     org.springframework.amqp.core.Message createdAmqpMsg =
         messageConverter.toMessage(createdEvent, new org.springframework.amqp.core.MessageProperties());
@@ -39,7 +40,7 @@ public class NotiEventCompatibilityTest {
     assertThat(tree.get("createdAt").isTextual())
         .withFailMessage("createdAt must be serialized as ISO string, but was %s", tree.get("createdAt"))
         .isTrue();
-    assertThat(tree.get("createdAt").asText()).isEqualTo("2026-10-27T14:30:45");
+    assertThat(tree.get("createdAt").asText()).isEqualTo("2026-10-27T14:30:45Z");
 
     // Notification consumer compatibility
     ObjectMapper notiConsumerMapper = new ObjectMapper().registerModule(new JavaTimeModule());
@@ -50,7 +51,7 @@ public class NotiEventCompatibilityTest {
 
     ProjectClosedEvent closedEvent =
         new ProjectClosedEvent(
-            projectId, "Dự án Thiết kế UI/UX", employerId, "employer@example.com", now);
+            projectId, "Dự án Thiết kế UI/UX", employerId, "employer@example.com", employerId, "USER", now);
 
     org.springframework.amqp.core.Message closedAmqpMsg =
         messageConverter.toMessage(closedEvent, new org.springframework.amqp.core.MessageProperties());

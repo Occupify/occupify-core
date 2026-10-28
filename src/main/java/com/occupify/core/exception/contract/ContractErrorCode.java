@@ -17,7 +17,9 @@ public enum ContractErrorCode implements BaseErrorCode {
       HttpStatus.BAD_REQUEST),
   JOB_NOT_OWNED(
       "CONTRACT_003", "Job does not belong to employer's project", HttpStatus.BAD_REQUEST),
-  USER_NOT_FOUND("CONTRACT_004", "User not found", HttpStatus.BAD_REQUEST),
+  JOB_NOT_FOUND("JOB_001", "Job not found", HttpStatus.NOT_FOUND),
+  JOB_ALREADY_CLOSED("JOB_002", "Job is already closed", HttpStatus.BAD_REQUEST),
+  USER_NOT_FOUND("CONTRACT_004", "User not found", HttpStatus.NOT_FOUND),
   INVALID_CANCELLATION_REASON(
       "CONTRACT_005", "Lý do hủy hợp đồng không hợp lệ hoặc quá ngắn", HttpStatus.BAD_REQUEST),
   CONTRACT_ALREADY_COMPLETED(

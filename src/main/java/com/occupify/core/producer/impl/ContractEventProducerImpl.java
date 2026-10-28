@@ -2,6 +2,7 @@ package com.occupify.core.producer.impl;
 
 import com.occupify.core.event.ContractAcceptedEvent;
 import com.occupify.core.event.ContractCompensationRequestedEvent;
+import com.occupify.core.event.ContractCreatedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
 import com.occupify.core.producer.ContractEventProducer;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,9 @@ public class ContractEventProducerImpl implements ContractEventProducer {
   @Value("${app.rabbitmq.contract-exchange:occupify.contract.exchange}")
   private String contractExchange;
 
+  @Value("${app.rabbitmq.contract-created-routing-key:contract.created}")
+  private String contractCreatedRoutingKey;
+
   @Value("${app.rabbitmq.contract-accepted-routing-key:contract.accepted}")
   private String contractAcceptedRoutingKey;
 
@@ -29,6 +33,16 @@ public class ContractEventProducerImpl implements ContractEventProducer {
   @Value(
       "${app.rabbitmq.contract-compensation-publish-routing-key:contract.compensation.requested}")
   private String contractCompensationPublishRoutingKey;
+
+  @Override
+  public void publishContractCreated(ContractCreatedEvent event) {
+    log.info(
+        "[Event Producer] Publishing ContractCreatedEvent for contract [{}] to exchange [{}] with routingKey [{}]",
+        event.contractId(),
+        contractExchange,
+        contractCreatedRoutingKey);
+    rabbitTemplate.convertAndSend(contractExchange, contractCreatedRoutingKey, event);
+  }
 
   @Override
   public void publishContractAccepted(ContractAcceptedEvent event) {

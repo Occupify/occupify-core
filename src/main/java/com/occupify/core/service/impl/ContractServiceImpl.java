@@ -18,6 +18,7 @@ import com.occupify.core.entity.review.Review;
 import com.occupify.core.entity.user.User;
 import com.occupify.core.enums.BidStatus;
 import com.occupify.core.enums.ContractStatus;
+import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.OfferStatus;
 import com.occupify.core.enums.SalaryType;
 import com.occupify.core.event.ContractAcceptedEvent;
@@ -38,6 +39,7 @@ import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ContractService;
 import com.occupify.core.service.JobLifecycleService;
 import com.occupify.core.service.StorageService;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -77,8 +79,8 @@ public class ContractServiceImpl implements ContractService {
   public ContractDetailResponse createContract(
       CreateContractRequest request, MultipartFile file, UserContext userContext) {
     log.info(
-        "[ContractService] Creating contract: title='{}', user={}",
-        request.title(),
+        "[ContractService] Creating contract: jobId={}, user={}",
+        request.jobId(),
         userContext.userId());
 
     User employer =
@@ -88,24 +90,49 @@ public class ContractServiceImpl implements ContractService {
 
     Job job =
         jobRepository
-            .findById(request.jobId())
+            .findWithProjectById(request.jobId())
+            .or(() -> jobRepository.findById(request.jobId()))
             .orElseThrow(() -> new ContractException(ContractErrorCode.JOB_NOT_OWNED));
 
-    if (job.getProject() == null
-        || job.getProject().getEmployer() == null
-        || !job.getProject().getEmployer().getId().equals(employer.getId())) {
+    if (!userContext.isAdmin()
+        && (job.getProject() == null
+            || job.getProject().getEmployer() == null
+            || !job.getProject().getEmployer().getId().equals(employer.getId()))) {
       throw new ContractException(ContractErrorCode.JOB_NOT_OWNED);
     }
 
     User employee = resolveEmployee(request);
+    String freelancerEmail =
+        request.freelancerGmail() != null && !request.freelancerGmail().isBlank()
+            ? request.freelancerGmail().trim()
+            : employee.getEmail();
 
-    if ("JOB_BID".equalsIgnoreCase(request.sourceType()) && request.sourceId() != null) {
-      cascadeAcceptedBid(job.getId(), request.sourceId());
+    // Auto-close the Job from project
+    job.setStatus(JobStatus.CLOSED);
+    jobRepository.save(job);
+
+    // Reject other pending proposals for this job and accept candidate's bid if present
+    List<Bid> bids = bidRepository.findByJobId(job.getId());
+    if (bids != null) {
+      for (Bid bid : bids) {
+        boolean isCandidate =
+            (employee != null && bid.getFreelancer() != null && bid.getFreelancer().getId().equals(employee.getId()))
+                || (freelancerEmail != null && bid.getFreelancer() != null && freelancerEmail.equalsIgnoreCase(bid.getFreelancer().getEmail()));
+        if (isCandidate) {
+          bid.setStatus(BidStatus.ACCEPTED);
+          bidRepository.save(bid);
+        } else if (bid.getStatus() == BidStatus.PENDING) {
+          bid.setStatus(BidStatus.REJECTED);
+          bidRepository.save(bid);
+        }
+      }
     }
 
     String termsFileKey = null;
     if (file != null && !file.isEmpty()) {
       termsFileKey = storageService.uploadPrivateDocument("contracts/" + UUID.randomUUID(), file);
+    } else if (job.getTermsFileKey() != null && !job.getTermsFileKey().isBlank()) {
+      termsFileKey = job.getTermsFileKey();
     }
 
     Contract contract =
@@ -113,36 +140,45 @@ public class ContractServiceImpl implements ContractService {
             .job(job)
             .employer(employer)
             .employee(employee)
-            .title(request.title())
-            .sourceType(request.sourceType())
-            .sourceId(request.sourceId())
-            .agreedRate(request.agreedRate())
-            .salaryType(request.salaryType())
-            .salaryDueDate(request.salaryDueDate())
-            .jobDescription(request.jobDescription())
+            .freelancerEmail(freelancerEmail)
+            .message(request.message())
+            .sourceType("DIRECT_INVITE")
+            .sourceId(job.getId())
+            .salaryType(job.getSalaryType() != null ? job.getSalaryType().name() : null)
+            .agreedRate(job.getBudget() != null ? job.getBudget() : job.getBudgetMin())
             .status(ContractStatus.PENDING)
+            .paymentStatus("PENDING")
             .termsFileKey(termsFileKey)
-            .startedAt(request.startedAt())
-            .finishedAt(request.finishedAt())
             .build();
 
     contract = contractRepository.save(contract);
 
-    if ("DIRECT_OFFER".equalsIgnoreCase(request.sourceType())) {
-      Offer offer =
-          Offer.builder()
-              .contract(contract)
-              .freelancer(employee)
-              .proposedRate(request.agreedRate())
-              .offerMessage(request.invitationMessage())
-              .status(OfferStatus.PENDING)
-              .build();
-      Offer savedOffer = offerRepository.save(offer);
-      contract.setSourceId(savedOffer.getId());
-      contract = contractRepository.save(contract);
-    }
+    // Publish ContractCreatedEvent with effective job fallback values
+    String employerName = (employer.getFullName() != null && !employer.getFullName().isBlank())
+        ? employer.getFullName()
+        : employer.getEmail();
+    com.occupify.core.event.ContractCreatedEvent event =
+        new com.occupify.core.event.ContractCreatedEvent(
+            UUID.randomUUID(),
+            contract.getId(),
+            job.getId(),
+            job.getProject() != null ? job.getProject().getId() : null,
+            employer.getId(),
+            employee != null ? employee.getId() : null,
+            freelancerEmail,
+            request.message(),
+            contract.getEffectiveRole(),
+            contract.getEffectiveTitle(),
+            contract.getEffectiveRate(),
+            contract.getEffectiveSalaryType(),
+            contract.getEffectiveStartedAt(),
+            contract.getEffectiveFinishedAt(),
+            contract.getCreatedAt() != null ? contract.getCreatedAt() : LocalDateTime.now(),
+            employerName,
+            employer.getEmail());
+    contractEventProducer.publishContractCreated(event);
 
-    String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
+    String termsFileUrl = resolveTermsFileUrl(contract.getEffectiveTermsFileKey());
     return contractMapper.toDetailResponse(contract, termsFileUrl, null);
   }
 
@@ -151,10 +187,7 @@ public class ContractServiceImpl implements ContractService {
       UUID id, UpdateContractRequest request, MultipartFile file, UserContext userContext) {
     log.info("[ContractService] Updating contract: id={}, user={}", id, userContext.userId());
 
-    Contract contract =
-        contractRepository
-            .findById(id)
-            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+    Contract contract = getActiveContractOrThrow(id);
 
     if (!userContext.isAdmin()
         && (contract.getEmployer() == null
@@ -203,10 +236,7 @@ public class ContractServiceImpl implements ContractService {
   public ContractDetailResponse getContractDetail(UUID id, UserContext userContext) {
     log.info("[ContractService] Getting contract detail: id={}, user={}", id, userContext.userId());
 
-    Contract contract =
-        contractRepository
-            .findById(id)
-            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+    Contract contract = getActiveContractOrThrow(id);
 
     verifyContractAccess(contract, userContext);
 
@@ -218,46 +248,30 @@ public class ContractServiceImpl implements ContractService {
   }
 
   @Override
-  public ContractDetailResponse cancelContract(
-      UUID id, CancelContractRequest request, MultipartFile file, UserContext userContext) {
+  public ContractDetailResponse cancelContract(UUID id, UserContext userContext) {
     log.info("[ContractService] Cancelling contract: id={}, user={}", id, userContext.userId());
 
-    Contract contract =
-        contractRepository
-            .findById(id)
-            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+    Contract contract = getActiveContractOrThrow(id);
 
     verifyContractAccess(contract, userContext);
     validateStatusForCancellation(contract.getStatus());
-
-    if (request == null
-        || request.reason() == null
-        || request.reason().trim().length() < MIN_REASON_LENGTH) {
-      throw new ContractException(ContractErrorCode.INVALID_CANCELLATION_REASON);
-    }
 
     User requestedByUser =
         userRepository
             .findById(userContext.userId())
             .orElseThrow(() -> new ContractException(ContractErrorCode.USER_NOT_FOUND));
 
-    String evidenceFileKey = null;
-    if (file != null && !file.isEmpty()) {
-      evidenceFileKey =
-          storageService.uploadPrivateDocument("cancellations/" + contract.getId(), file);
-    }
-
     CancellationContract cancellation =
         CancellationContract.builder()
             .contract(contract)
             .requestedByUser(requestedByUser)
-            .reason(request.reason().trim())
-            .evidenceFileKey(evidenceFileKey)
+            .reason("Contract cancelled by user")
             .status("ACCEPTED")
             .build();
     cancellation = cancellationContractRepository.save(cancellation);
 
     contract.setStatus(ContractStatus.CANCELLED);
+    contract.setFinishedAt(LocalDateTime.now());
     contract = contractRepository.save(contract);
 
     expirePendingOffers(contract.getId());
@@ -266,7 +280,7 @@ public class ContractServiceImpl implements ContractService {
       jobLifecycleService.recompute(contract.getJob().getId());
     }
 
-    String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
+    String termsFileUrl = resolveTermsFileUrl(contract.getEffectiveTermsFileKey());
     String evidenceFileUrl = null;
     if (cancellation.getEvidenceFileKey() != null) {
       evidenceFileUrl =
@@ -283,20 +297,36 @@ public class ContractServiceImpl implements ContractService {
   public ContractDetailResponse acceptContract(UUID id, UserContext userContext) {
     log.info("[ContractService] Accepting contract: id={}, user={}", id, userContext.userId());
 
-    Contract contract =
-        contractRepository
-            .findById(id)
-            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+    Contract contract = getActiveContractOrThrow(id);
 
-    if (contract.getEmployee() == null
-        || !contract.getEmployee().getId().equals(userContext.userId())) {
+    boolean isAssignedEmployee =
+        contract.getEmployee() != null
+            && contract.getEmployee().getId().equals(userContext.userId());
+    boolean isAssignedEmail =
+        contract.getFreelancerEmail() != null
+            && contract.getFreelancerEmail().equalsIgnoreCase(userContext.email());
+    if (!isAssignedEmployee && !isAssignedEmail) {
       throw new ContractException(ContractErrorCode.FORBIDDEN_CONTRACT_ACCESS);
+    }
+
+    if (contract.getEmployee() == null) {
+      userRepository.findById(userContext.userId()).ifPresent(contract::setEmployee);
     }
 
     validateStatusForAcceptance(contract.getStatus());
 
     contract.setStatus(ContractStatus.PENDING_ESCROW);
     contract = contractRepository.save(contract);
+
+    if (contract.getJob() != null) {
+      List<Bid> bids = bidRepository.findByJobId(contract.getJob().getId());
+      for (Bid b : bids) {
+        if (b.getStatus() == BidStatus.PENDING) {
+          b.setStatus(BidStatus.REJECTED);
+          bidRepository.save(b);
+        }
+      }
+    }
 
     UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
     UUID jobId = contract.getJob() != null ? contract.getJob().getId() : null;
@@ -306,12 +336,27 @@ public class ContractServiceImpl implements ContractService {
             : null;
 
     SalaryType salaryTypeEnum = SalaryType.FIXED;
+    String effectiveSalaryType = contract.getEffectiveSalaryType();
     try {
-      if (contract.getSalaryType() != null) {
-        salaryTypeEnum = SalaryType.valueOf(contract.getSalaryType().toUpperCase());
+      if (effectiveSalaryType != null) {
+        salaryTypeEnum = SalaryType.valueOf(effectiveSalaryType.toUpperCase());
       }
     } catch (IllegalArgumentException ignored) {
     }
+
+    String employerEmail = contract.getEmployer() != null ? contract.getEmployer().getEmail() : null;
+    String employerName =
+        (contract.getEmployer() != null && contract.getEmployer().getFullName() != null)
+            ? contract.getEmployer().getFullName()
+            : (employerEmail != null ? employerEmail : "Nhà tuyển dụng");
+    String freelancerEmail =
+        contract.getEmployee() != null
+            ? contract.getEmployee().getEmail()
+            : userContext.email();
+    String freelancerName =
+        (contract.getEmployee() != null && contract.getEmployee().getFullName() != null)
+            ? contract.getEmployee().getFullName()
+            : (freelancerEmail != null ? freelancerEmail : "Ứng viên");
 
     ContractAcceptedEvent event =
         new ContractAcceptedEvent(
@@ -321,12 +366,16 @@ public class ContractServiceImpl implements ContractService {
             projectId,
             employerId,
             userContext.userId(),
-            contract.getTitle(),
-            contract.getAgreedRate(),
+            contract.getEffectiveTitle(),
+            contract.getEffectiveRate(),
             salaryTypeEnum,
             LocalDate.now(),
             contract.getFinishedAt() != null ? contract.getFinishedAt().toLocalDate() : null,
-            LocalDateTime.now());
+            LocalDateTime.now(),
+            employerEmail,
+            employerName,
+            freelancerName,
+            freelancerEmail);
 
     contractEventProducer.publishContractAccepted(event);
 
@@ -339,43 +388,59 @@ public class ContractServiceImpl implements ContractService {
   }
 
   @Override
-  public ContractDetailResponse rejectContract(
-      UUID id, RejectContractRequest request, UserContext userContext) {
+  public ContractDetailResponse rejectContract(UUID id, UserContext userContext) {
     log.info("[ContractService] Rejecting contract: id={}, user={}", id, userContext.userId());
 
-    Contract contract =
-        contractRepository
-            .findById(id)
-            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+    Contract contract = getActiveContractOrThrow(id);
 
-    if (contract.getEmployee() == null
-        || !contract.getEmployee().getId().equals(userContext.userId())) {
+    boolean isAssignedEmployee =
+        contract.getEmployee() != null
+            && contract.getEmployee().getId().equals(userContext.userId());
+    boolean isAssignedEmail =
+        contract.getFreelancerEmail() != null
+            && contract.getFreelancerEmail().equalsIgnoreCase(userContext.email());
+    if (!isAssignedEmployee && !isAssignedEmail) {
       throw new ContractException(ContractErrorCode.FORBIDDEN_CONTRACT_ACCESS);
+    }
+
+    if (contract.getEmployee() == null) {
+      userRepository.findById(userContext.userId()).ifPresent(contract::setEmployee);
     }
 
     validateStatusForAcceptance(contract.getStatus());
 
     contract.setStatus(ContractStatus.CANCELLED);
+    contract.setFinishedAt(LocalDateTime.now());
     contract = contractRepository.save(contract);
 
     rejectPendingOffers(contract.getId());
-
-    String reason =
-        (request != null && request.reason() != null && !request.reason().isBlank())
-            ? request.reason().trim()
-            : "Ứng viên từ chối đề nghị hợp đồng";
 
     CancellationContract cancellation =
         CancellationContract.builder()
             .contract(contract)
             .requestedByUser(contract.getEmployee())
-            .reason(reason)
+            .reason("Contract rejected by freelancer")
             .status("ACCEPTED")
             .build();
     cancellation = cancellationContractRepository.save(cancellation);
 
     UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
     UUID jobId = contract.getJob() != null ? contract.getJob().getId() : null;
+
+    String employerEmail = contract.getEmployer() != null ? contract.getEmployer().getEmail() : null;
+    String employerName =
+        (contract.getEmployer() != null && contract.getEmployer().getFullName() != null)
+            ? contract.getEmployer().getFullName()
+            : (employerEmail != null ? employerEmail : "Nhà tuyển dụng");
+    String freelancerEmail =
+        contract.getEmployee() != null
+            ? contract.getEmployee().getEmail()
+            : userContext.email();
+    String freelancerName =
+        (contract.getEmployee() != null && contract.getEmployee().getFullName() != null)
+            ? contract.getEmployee().getFullName()
+            : (freelancerEmail != null ? freelancerEmail : "Ứng viên");
+    String jobTitle = contract.getEffectiveTitle();
 
     ContractRejectedEvent event =
         new ContractRejectedEvent(
@@ -384,11 +449,15 @@ public class ContractServiceImpl implements ContractService {
             jobId,
             employerId,
             userContext.userId(),
-            reason,
-            LocalDateTime.now());
+            "Contract rejected by freelancer",
+            LocalDateTime.now(),
+            employerEmail,
+            employerName,
+            freelancerName,
+            jobTitle);
     contractEventProducer.publishContractRejected(event);
 
-    String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
+    String termsFileUrl = resolveTermsFileUrl(contract.getEffectiveTermsFileKey());
     CancellationContractResponse cancellationResponse =
         contractMapper.toCancellationResponse(cancellation, null);
 
@@ -400,10 +469,7 @@ public class ContractServiceImpl implements ContractService {
       UUID id, CompleteContractRequest request, UserContext userContext) {
     log.info("[ContractService] Completing contract: id={}, user={}", id, userContext.userId());
 
-    Contract contract =
-        contractRepository
-            .findById(id)
-            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+    Contract contract = getActiveContractOrThrow(id);
 
     if (contract.getEmployer() == null
         || !contract.getEmployer().getId().equals(userContext.userId())) {
@@ -430,54 +496,74 @@ public class ContractServiceImpl implements ContractService {
     return contractMapper.toDetailResponse(contract, termsFileUrl, null);
   }
 
-  private User resolveEmployee(CreateContractRequest request) {
-    if (request.employeeId() != null) {
-      return userRepository
-          .findById(request.employeeId())
-          .orElseThrow(() -> new ContractException(ContractErrorCode.USER_NOT_FOUND));
+  @Override
+  public void removeContract(UUID id, UserContext userContext) {
+    log.info("[ContractService] Removing contract: id={}, user={}", id, userContext.userId());
+
+    Contract contract = getActiveContractOrThrow(id);
+
+    verifyContractAccess(contract, userContext);
+
+    contract.setDeletedAt(LocalDateTime.now());
+    if (contract.getStatus() == ContractStatus.PENDING) {
+      contract.setStatus(ContractStatus.CANCELLED);
     }
-    if (request.freelancerEmail() != null && !request.freelancerEmail().isBlank()) {
+    contractRepository.save(contract);
+
+    rejectPendingOffers(contract.getId());
+
+    if (contract.getJob() != null) {
+      List<Bid> bids = bidRepository.findByJobId(contract.getJob().getId());
+      for (Bid b : bids) {
+        if (b.getStatus() == BidStatus.PENDING) {
+          b.setStatus(BidStatus.REJECTED);
+          bidRepository.save(b);
+        }
+      }
+    }
+  }
+
+  private User resolveEmployee(CreateContractRequest request) {
+    if (request.freelancerGmail() != null && !request.freelancerGmail().isBlank()) {
       return userRepository
-          .findByEmail(request.freelancerEmail().trim())
+          .findByEmail(request.freelancerGmail().trim())
           .orElseThrow(() -> new ContractException(ContractErrorCode.USER_NOT_FOUND));
     }
     throw new ContractException(ContractErrorCode.USER_NOT_FOUND);
   }
 
-  private void cascadeAcceptedBid(UUID jobId, UUID bidId) {
-    Bid bid =
-        bidRepository
-            .findById(bidId)
-            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
-    if (!bid.getJob().getId().equals(jobId)) {
-      throw new ContractException(ContractErrorCode.JOB_NOT_OWNED);
+  private void applyUpdateRequest(Contract contract, UpdateContractRequest request) {
+    if (request.jobId() != null
+        && (contract.getJob() == null || !contract.getJob().getId().equals(request.jobId()))) {
+      Job job =
+          jobRepository
+              .findById(request.jobId())
+              .orElseThrow(() -> new ContractException(ContractErrorCode.JOB_NOT_FOUND));
+      contract.setJob(job);
     }
-    bid.setStatus(BidStatus.ACCEPTED);
-    bidRepository.save(bid);
+    if (request.message() != null) {
+      contract.setMessage(request.message());
+    }
+    if (request.freelancerGmail() != null && !request.freelancerGmail().isBlank()) {
+      String email = request.freelancerGmail().trim();
+      contract.setFreelancerEmail(email);
+      User employee =
+          userRepository
+              .findByEmail(email)
+              .orElseThrow(() -> new ContractException(ContractErrorCode.USER_NOT_FOUND));
+      contract.setEmployee(employee);
+    }
   }
 
-  private void applyUpdateRequest(Contract contract, UpdateContractRequest request) {
-    if (request.title() != null) {
-      contract.setTitle(request.title());
+  private Contract getActiveContractOrThrow(UUID id) {
+    Contract contract =
+        contractRepository
+            .findById(id)
+            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+    if (contract.getDeletedAt() != null) {
+      throw new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND);
     }
-    if (request.agreedRate() != null) {
-      contract.setAgreedRate(request.agreedRate());
-    }
-    if (request.salaryType() != null) {
-      contract.setSalaryType(request.salaryType());
-    }
-    if (request.salaryDueDate() != null) {
-      contract.setSalaryDueDate(request.salaryDueDate());
-    }
-    if (request.startedAt() != null) {
-      contract.setStartedAt(request.startedAt());
-    }
-    if (request.finishedAt() != null) {
-      contract.setFinishedAt(request.finishedAt());
-    }
-    if (request.jobDescription() != null) {
-      contract.setJobDescription(request.jobDescription());
-    }
+    return contract;
   }
 
   private void validateStatusForUpdate(ContractStatus status) {
@@ -602,13 +688,18 @@ public class ContractServiceImpl implements ContractService {
       return;
     }
 
+    if (contract.getStatus() == ContractStatus.IN_PROGRESS) {
+      log.info("Contract [{}] is already IN_PROGRESS", contractId);
+      return;
+    }
+
     if (contract.getStatus() == ContractStatus.PENDING_ESCROW) {
       contract.setStatus(ContractStatus.IN_PROGRESS);
       contract.setStartedAt(LocalDateTime.now());
       contractRepository.save(contract);
       acceptPendingOffers(contract.getId());
     } else {
-      log.error(
+      log.warn(
           "Contract [{}] has status [{}], expected PENDING_ESCROW for activation",
           contractId,
           contract.getStatus());

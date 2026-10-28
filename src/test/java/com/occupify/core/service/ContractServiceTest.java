@@ -134,19 +134,14 @@ class ContractServiceTest {
     CreateContractRequest request =
         CreateContractRequest.builder()
             .jobId(job.getId())
-            .employeeId(employee.getId())
-            .sourceType("JOB_BID")
-            .sourceId(bidId)
-            .title("Contract Backend Dev")
-            .agreedRate(new BigDecimal("35000000.00"))
-            .salaryType("MONTHLY")
-            .invitationMessage("Welcome to the team")
+            .freelancerGmail(employee.getEmail())
+            .message("Welcome to the team")
             .build();
 
     when(userRepository.findById(employerId)).thenReturn(Optional.of(employer));
     when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
-    when(userRepository.findById(employee.getId())).thenReturn(Optional.of(employee));
-    when(bidRepository.findById(bidId)).thenReturn(Optional.of(bid));
+    when(userRepository.findByEmail(employee.getEmail())).thenReturn(Optional.of(employee));
+    when(bidRepository.findByJobId(job.getId())).thenReturn(List.of(bid));
     when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
 
     ContractDetailResponse mockResponse =
@@ -174,51 +169,30 @@ class ContractServiceTest {
     CreateContractRequest request =
         CreateContractRequest.builder()
             .jobId(job.getId())
-            .employeeId(employee.getId())
-            .sourceType("DIRECT_OFFER")
-            .title("Direct Offer Contract")
-            .agreedRate(new BigDecimal("40000000.00"))
-            .salaryType("MONTHLY")
-            .invitationMessage("Direct offer invitation")
+            .freelancerGmail(employee.getEmail())
+            .message("Direct offer invitation")
             .build();
 
     when(userRepository.findById(employerId)).thenReturn(Optional.of(employer));
     when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
-    when(userRepository.findById(employee.getId())).thenReturn(Optional.of(employee));
+    when(userRepository.findByEmail(employee.getEmail())).thenReturn(Optional.of(employee));
     when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
 
-    UUID generatedOfferId = UUID.randomUUID();
-    when(offerRepository.save(any(Offer.class)))
-        .thenAnswer(
-            inv -> {
-              Offer o = inv.getArgument(0);
-              o.setId(generatedOfferId);
-              return o;
-            });
-
     ContractDetailResponse mockResponse =
-        ContractDetailResponse.builder().title("Direct Offer Contract").build();
+        ContractDetailResponse.builder().title(job.getTitle()).build();
     when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
 
     ContractDetailResponse response =
         contractService.createContract(request, null, employerContext);
 
-    assertThat(response.getTitle()).isEqualTo("Direct Offer Contract");
+    assertThat(response.getTitle()).isEqualTo(job.getTitle());
 
-    ArgumentCaptor<Offer> offerCaptor = ArgumentCaptor.forClass(Offer.class);
-    verify(offerRepository).save(offerCaptor.capture());
-    Offer savedOffer = offerCaptor.getValue();
-    assertThat(savedOffer.getFreelancer()).isEqualTo(employee);
-    assertThat(savedOffer.getProposedRate()).isEqualTo(new BigDecimal("40000000.00"));
-    assertThat(savedOffer.getOfferMessage()).isEqualTo("Direct offer invitation");
-    assertThat(savedOffer.getStatus()).isEqualTo(OfferStatus.PENDING);
-
-    // contractRepository.save is called twice: initial creation and after setting sourceId
     ArgumentCaptor<Contract> contractCaptor = ArgumentCaptor.forClass(Contract.class);
-    verify(contractRepository, times(2)).save(contractCaptor.capture());
-    Contract lastSavedContract = contractCaptor.getValue();
-    assertThat(lastSavedContract.getSourceId()).isEqualTo(generatedOfferId);
-    assertThat(lastSavedContract.getSourceType()).isEqualTo("DIRECT_OFFER");
+    verify(contractRepository).save(contractCaptor.capture());
+    Contract savedContract = contractCaptor.getValue();
+    assertThat(savedContract.getFreelancerEmail()).isEqualTo(employee.getEmail());
+    assertThat(savedContract.getMessage()).isEqualTo("Direct offer invitation");
+    assertThat(savedContract.getSourceType()).isEqualTo("DIRECT_INVITE");
   }
 
   @Test
@@ -227,10 +201,8 @@ class ContractServiceTest {
     CreateContractRequest request =
         CreateContractRequest.builder()
             .jobId(job.getId())
-            .freelancerEmail("freelancer@test.local")
-            .title("Contract Backend Dev")
-            .agreedRate(new BigDecimal("35000000.00"))
-            .salaryType("MONTHLY")
+            .freelancerGmail("freelancer@test.local")
+            .message("Contract Backend Dev")
             .build();
 
     MockMultipartFile file =
@@ -298,28 +270,25 @@ class ContractServiceTest {
 
     UpdateContractRequest updateReq =
         UpdateContractRequest.builder()
-            .title("New Title")
-            .agreedRate(new BigDecimal("25000000.00"))
-            .salaryType("PROJECT")
-            .salaryDueDate("Every 15th")
-            .jobDescription("Updated JD")
+            .jobId(job.getId())
+            .message("Updated message")
+            .freelancerGmail("dev@occupify.local")
             .build();
 
     when(contractRepository.findById(contract.getId())).thenReturn(Optional.of(contract));
+    when(userRepository.findByEmail("dev@occupify.local")).thenReturn(Optional.of(employee));
     when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
 
     ContractDetailResponse mockResponse =
-        ContractDetailResponse.builder().title("New Title").build();
+        ContractDetailResponse.builder().title("Contract Backend Dev").build();
     when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
 
     ContractDetailResponse response =
         contractService.updateContract(contract.getId(), updateReq, null, employerContext);
 
-    assertThat(response.getTitle()).isEqualTo("New Title");
-    assertThat(contract.getTitle()).isEqualTo("New Title");
-    assertThat(contract.getAgreedRate()).isEqualTo(new BigDecimal("25000000.00"));
-    assertThat(contract.getSalaryType()).isEqualTo("PROJECT");
-    assertThat(contract.getJobDescription()).isEqualTo("Updated JD");
+    assertThat(response.getTitle()).isEqualTo("Contract Backend Dev");
+    assertThat(contract.getMessage()).isEqualTo("Updated message");
+    assertThat(contract.getFreelancerEmail()).isEqualTo("dev@occupify.local");
   }
 
   @Test
@@ -375,8 +344,7 @@ class ContractServiceTest {
     UUID contractId = UUID.randomUUID();
     when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
 
-    CancelContractRequest cancelReq = new CancelContractRequest("Lý do hủy hợp đồng đã đủ dài");
-    assertThatThrownBy(() -> contractService.cancelContract(contractId, cancelReq, employerContext))
+    assertThatThrownBy(() -> contractService.cancelContract(contractId, employerContext))
         .isInstanceOf(ContractException.class)
         .matches(
             ex ->
@@ -399,38 +367,13 @@ class ContractServiceTest {
     UUID contractId = UUID.randomUUID();
     when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
 
-    CancelContractRequest cancelReq = new CancelContractRequest("Lý do hủy hợp đồng đã đủ dài");
-    assertThatThrownBy(() -> contractService.cancelContract(contractId, cancelReq, employerContext))
+    assertThatThrownBy(() -> contractService.cancelContract(contractId, employerContext))
         .isInstanceOf(ContractException.class)
         .matches(
             ex ->
                 ((ContractException) ex)
                     .getCode()
                     .equals(ContractErrorCode.CONTRACT_ALREADY_CANCELLED.code()));
-  }
-
-  @Test
-  @DisplayName("Should reject cancellation when reason is shorter than 10 characters")
-  void shouldRejectCancellationWhenReasonTooShort() {
-    Contract contract =
-        Contract.builder()
-            .employer(employer)
-            .employee(employee)
-            .job(job)
-            .status(ContractStatus.PENDING)
-            .build();
-
-    UUID contractId = UUID.randomUUID();
-    when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
-
-    CancelContractRequest cancelReq = new CancelContractRequest("Ngắn");
-    assertThatThrownBy(() -> contractService.cancelContract(contractId, cancelReq, employerContext))
-        .isInstanceOf(ContractException.class)
-        .matches(
-            ex ->
-                ((ContractException) ex)
-                    .getCode()
-                    .equals(ContractErrorCode.INVALID_CANCELLATION_REASON.code()));
   }
 
   @Test
@@ -449,13 +392,8 @@ class ContractServiceTest {
     Offer pendingOffer =
         Offer.builder().contract(contract).freelancer(employee).status(OfferStatus.PENDING).build();
 
-    MockMultipartFile evidenceFile =
-        new MockMultipartFile("file", "evidence.pdf", "application/pdf", "proof".getBytes());
-
     when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
     when(userRepository.findById(employerId)).thenReturn(Optional.of(employer));
-    when(storageService.uploadPrivateDocument(any(), eq(evidenceFile)))
-        .thenReturn("cancellations/evidence.pdf");
     when(offerRepository.findByContractId(contractId)).thenReturn(List.of(pendingOffer));
     when(cancellationContractRepository.save(any(CancellationContract.class)))
         .thenAnswer(inv -> inv.getArgument(0));
@@ -465,10 +403,8 @@ class ContractServiceTest {
         ContractDetailResponse.builder().status(ContractStatus.CANCELLED).build();
     when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
 
-    CancelContractRequest cancelReq =
-        new CancelContractRequest("Lý do hủy hợp đồng này rất chi tiết và hợp lệ");
     ContractDetailResponse response =
-        contractService.cancelContract(contractId, cancelReq, evidenceFile, employerContext);
+        contractService.cancelContract(contractId, employerContext);
 
     assertThat(response.getStatus()).isEqualTo(ContractStatus.CANCELLED);
     assertThat(contract.getStatus()).isEqualTo(ContractStatus.CANCELLED);
@@ -563,11 +499,8 @@ class ContractServiceTest {
         ContractDetailResponse.builder().status(ContractStatus.CANCELLED).build();
     when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
 
-    RejectContractRequest rejectReq =
-        RejectContractRequest.builder().reason("Thù lao chưa phù hợp").build();
-
     ContractDetailResponse response =
-        contractService.rejectContract(contractId, rejectReq, employeeContext);
+        contractService.rejectContract(contractId, employeeContext);
 
     assertThat(response.getStatus()).isEqualTo(ContractStatus.CANCELLED);
     assertThat(contract.getStatus()).isEqualTo(ContractStatus.CANCELLED);
@@ -700,10 +633,8 @@ class ContractServiceTest {
     CreateContractRequest request =
         CreateContractRequest.builder()
             .jobId(unownedJob.getId())
-            .employeeId(employee.getId())
-            .title("Dev")
-            .agreedRate(new BigDecimal("10000000.00"))
-            .salaryType("MONTHLY")
+            .freelancerGmail("dev@test.local")
+            .message("Dev")
             .build();
 
     when(userRepository.findById(employerId)).thenReturn(Optional.of(employer));
@@ -714,6 +645,55 @@ class ContractServiceTest {
         .matches(
             ex ->
                 ((ContractException) ex).getCode().equals(ContractErrorCode.JOB_NOT_OWNED.code()));
+  }
+
+  @Test
+  @DisplayName("Should throw USER_NOT_FOUND when freelancer email does not exist in DB on contract creation")
+  void shouldThrowUserNotFoundWhenFreelancerDoesNotExistInDbOnCreate() {
+    CreateContractRequest request =
+        CreateContractRequest.builder()
+            .jobId(job.getId())
+            .freelancerGmail("unknown-freelancer@test.local")
+            .message("Dev")
+            .build();
+
+    when(userRepository.findById(employerId)).thenReturn(Optional.of(employer));
+    when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+    when(userRepository.findByEmail("unknown-freelancer@test.local")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> contractService.createContract(request, null, employerContext))
+        .isInstanceOf(ContractException.class)
+        .matches(
+            ex ->
+                ((ContractException) ex).getCode().equals(ContractErrorCode.USER_NOT_FOUND.code()));
+  }
+
+  @Test
+  @DisplayName("Should throw USER_NOT_FOUND when updating to non-existent freelancer email")
+  void shouldThrowUserNotFoundWhenUpdatingToNonExistentFreelancerEmail() {
+    Contract contract =
+        Contract.builder()
+            .employer(employer)
+            .employee(employee)
+            .job(job)
+            .status(ContractStatus.PENDING)
+            .build();
+    contract.setId(UUID.randomUUID());
+
+    UpdateContractRequest request =
+        UpdateContractRequest.builder()
+            .freelancerGmail("nonexistent@test.local")
+            .build();
+
+    when(contractRepository.findById(contract.getId())).thenReturn(Optional.of(contract));
+    when(userRepository.findByEmail("nonexistent@test.local")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(
+            () -> contractService.updateContract(contract.getId(), request, null, employerContext))
+        .isInstanceOf(ContractException.class)
+        .matches(
+            ex ->
+                ((ContractException) ex).getCode().equals(ContractErrorCode.USER_NOT_FOUND.code()));
   }
 
   @Test
@@ -812,5 +792,58 @@ class ContractServiceTest {
     assertThat(response.getCancellation()).isNotNull();
     assertThat(response.getCancellation().getEvidenceFileUrl())
         .isEqualTo("https://s3.download/proof.pdf");
+  }
+
+  @Test
+  @DisplayName("Should auto-close Job and publish ContractCreatedEvent when contract is created")
+  void shouldAutoCloseJobAndPublishEventOnContractCreate() {
+    job.setStatus(com.occupify.core.enums.JobStatus.RECRUITING);
+
+    CreateContractRequest request =
+        CreateContractRequest.builder()
+            .jobId(job.getId())
+            .freelancerGmail("freelancer@test.local")
+            .message("Please join the project")
+            .build();
+
+    when(userRepository.findById(employerId)).thenReturn(Optional.of(employer));
+    when(jobRepository.findWithProjectById(job.getId())).thenReturn(Optional.of(job));
+    when(userRepository.findByEmail("freelancer@test.local")).thenReturn(Optional.of(employee));
+    when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    ContractDetailResponse mockResponse =
+        ContractDetailResponse.builder().id(UUID.randomUUID()).build();
+    when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
+
+    contractService.createContract(request, null, employerContext);
+
+    // Verify job is closed
+    assertThat(job.getStatus()).isEqualTo(com.occupify.core.enums.JobStatus.CLOSED);
+    verify(jobRepository).save(job);
+
+    // Verify ContractCreatedEvent published
+    verify(contractEventProducer).publishContractCreated(any(com.occupify.core.event.ContractCreatedEvent.class));
+  }
+
+  @Test
+  @DisplayName("Should soft delete and cancel contract on removeContract")
+  void shouldSoftDeleteContractOnRemoveContract() {
+    UUID contractId = UUID.randomUUID();
+    Contract contract =
+        Contract.builder()
+            .job(job)
+            .employer(employer)
+            .employee(employee)
+            .status(ContractStatus.PENDING)
+            .build();
+    contract.setId(contractId);
+
+    when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
+
+    contractService.removeContract(contractId, employerContext);
+
+    assertThat(contract.getDeletedAt()).isNotNull();
+    assertThat(contract.getStatus()).isEqualTo(ContractStatus.CANCELLED);
+    verify(contractRepository).save(contract);
   }
 }
