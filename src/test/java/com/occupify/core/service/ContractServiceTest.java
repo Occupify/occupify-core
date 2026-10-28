@@ -68,6 +68,7 @@ class ContractServiceTest {
   private StorageService storageService;
   private ContractMapper contractMapper;
   private com.occupify.core.producer.ContractEventProducer contractEventProducer;
+  private JobLifecycleService jobLifecycleService;
 
   private ContractService contractService;
 
@@ -91,6 +92,7 @@ class ContractServiceTest {
     storageService = mock(StorageService.class);
     contractMapper = mock(ContractMapper.class);
     contractEventProducer = mock(com.occupify.core.producer.ContractEventProducer.class);
+    jobLifecycleService = mock(JobLifecycleService.class);
 
     contractService =
         new ContractServiceImpl(
@@ -103,7 +105,8 @@ class ContractServiceTest {
             reviewRepository,
             storageService,
             contractMapper,
-            contractEventProducer);
+            contractEventProducer,
+            jobLifecycleService);
 
     employerId = UUID.randomUUID();
     employerContext = new UserContext(employerId, UserRole.USER, "employer@test.local");

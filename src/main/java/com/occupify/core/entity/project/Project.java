@@ -5,7 +5,9 @@ import com.occupify.core.entity.user.User;
 import com.occupify.core.enums.ExperienceLevel;
 import com.occupify.core.enums.ProjectPeriod;
 import com.occupify.core.enums.ProjectStatus;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -13,14 +15,18 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 @Getter
 @Setter
@@ -67,4 +73,24 @@ public class Project extends AbstractBaseEntity {
 
   @Column(name = "closed_at")
   private LocalDateTime closedAt;
+
+  @Column(name = "hours_per_day", precision = 3, scale = 1)
+  private BigDecimal hoursPerDay;
+
+  @Column(name = "location", length = 120)
+  private String location;
+
+  @Column(name = "duration", length = 60)
+  private String duration;
+
+  @Builder.Default
+  @ElementCollection
+  @CollectionTable(name = "project_tag", joinColumns = @JoinColumn(name = "project_id"))
+  @Column(name = "tag", length = 40)
+  @BatchSize(size = 50)
+  private Set<String> tags = new HashSet<>();
+
+  @Version
+  @Column(name = "version", nullable = false)
+  private Long version;
 }

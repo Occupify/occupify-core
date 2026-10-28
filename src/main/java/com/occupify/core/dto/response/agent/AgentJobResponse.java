@@ -1,0 +1,25 @@
+package com.occupify.core.dto.response.agent;
+
+import com.occupify.core.enums.JobStatus;
+import com.occupify.core.enums.SalaryType;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+public record AgentJobResponse(
+    UUID id,
+    Long version,
+    UUID projectId,
+    String title,
+    String description,
+    Integer quantity,
+    SalaryType salaryType,
+    BigDecimal budgetMin,
+    BigDecimal budgetMax,
+    JobStatus status,
+    Integer bidCount,
+    List<String> skills,
+    List<String> requirements,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt) {}

@@ -1,0 +1,43 @@
+{
+  "statusCode" : 200,
+  "message" : "Project retrieved successfully",
+  "data" : {
+    "id" : "11111111-1111-1111-1111-111111111111",
+    "version" : 0,
+    "title" : "Sample Mobile Application",
+    "description" : "A sample mobile application for contract testing",
+    "startPrice" : 3.0E7,
+    "period" : "MONTHLY",
+    "dueDate" : "2026-12-31",
+    "experienceLevel" : null,
+    "status" : "OPEN",
+    "startDate" : null,
+    "endDate" : null,
+    "closedAt" : null,
+    "hoursPerDay" : 8.0,
+    "location" : "Hà Nội",
+    "duration" : "3 tháng",
+    "tags" : [ "F&B", "Mobile App" ],
+    "skills" : [ ],
+    "openJobsCount" : 1,
+    "jobs" : [ {
+      "id" : "11111111-1111-1111-1111-111111111112",
+      "version" : 0,
+      "projectId" : "11111111-1111-1111-1111-111111111111",
+      "title" : "React Native Specialist",
+      "description" : "Job requirements for mobile app",
+      "quantity" : 1,
+      "salaryType" : "MONTHLY",
+      "budgetMin" : 2.0E7,
+      "budgetMax" : 3.0E7,
+      "status" : "RECRUITING",
+      "bidCount" : 0,
+      "skills" : [ ],
+      "requirements" : [ "React Native 0.76", "TypeScript 5" ],
+      "createdAt" : "<ts>",
+      "updatedAt" : "<ts>"
+    } ],
+    "createdAt" : "<ts>",
+    "updatedAt" : "<ts>"
+  }
+}

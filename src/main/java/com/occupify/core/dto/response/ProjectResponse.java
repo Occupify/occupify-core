@@ -3,6 +3,7 @@ package com.occupify.core.dto.response;
 import com.occupify.core.enums.ExperienceLevel;
 import com.occupify.core.enums.ProjectPeriod;
 import com.occupify.core.enums.ProjectStatus;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,5 +25,11 @@ public record ProjectResponse(
     Set<String> skills,
     Integer openJobsCount,
     List<JobSummaryResponse> jobs,
+    BigDecimal hoursPerDay,
+    String location,
+    String duration,
+    Set<String> tags,
+    Long version,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}
+

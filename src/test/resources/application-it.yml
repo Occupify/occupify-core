@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: occupify-core
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+        default_batch_fetch_size: 50
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    out-of-order: true
+
+app:
+  rabbitmq:
+    exchange: occupify.notification.exchange
+    core-exchange: occupify.core.exchange
+    project-created-routing-key: project.created
+    project-closed-routing-key: project.closed
+    bid-created-routing-key: bid.created
+    bid-cancelled-routing-key: bid.cancelled
+    user-queue: occupify.core.user.queue
+    user-registered-routing-key: user.registered
+    dlx-exchange: occupify.core.dlx
+    dlq-queue: occupify.core.user.dlq
+    dlq-routing-key: user.dlq
+    agent-rpc-exchange: occupify.agent.rpc
+    project-search-queue: occupify.core.rpc.project.search
+    project-search-routing-key: core.project.search
+    project-get-queue: occupify.core.rpc.project.get
+    project-get-routing-key: core.project.get
+  auth:
+    dev-mock:
+      enabled: false
+  storage:
+    s3:
+      region: ap-singapore-1
+      bucket-name: test-bucket
+      path-style-access-enabled: true
+      presigned-duration-minutes: 15
