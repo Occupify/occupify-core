@@ -3,7 +3,6 @@ package com.occupify.core.it;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.List;
@@ -77,11 +76,13 @@ public class FlywayMigrationIT extends AbstractIntegrationIT {
       UUID projectId = UUID.randomUUID();
       jdbcTemplate.update(
           "INSERT INTO projects (id, employer_id, title, description, start_price, period, due_date, status) VALUES (?, ?, 'Legacy Project', 'Legacy Desc', 10000000, 'MONTHLY', '2026-12-31', 'OPEN')",
-          projectId, employerId);
+          projectId,
+          employerId);
       UUID jobId = UUID.randomUUID();
       jdbcTemplate.update(
           "INSERT INTO job (id, project_id, title, description, quantity, salary_type, budget_min, budget_max, status) VALUES (?, ?, 'Legacy Job', 'Legacy Job Desc', 1, 'MONTHLY', 10000000, 20000000, 'RECRUITING')",
-          jobId, projectId);
+          jobId,
+          projectId);
       rows =
           jdbcTemplate.queryForList(
               "SELECT hours_per_day, location, duration, version FROM projects WHERE id = ?",
@@ -112,10 +113,7 @@ public class FlywayMigrationIT extends AbstractIntegrationIT {
   void hibernateValidatePasses() {
     MigrationInfo current = flyway.info().current();
     assertThat(current).isNotNull();
-    assertThat(
-            current
-                .getVersion()
-                .compareTo(MigrationVersion.fromVersion("7")))
+    assertThat(current.getVersion().compareTo(MigrationVersion.fromVersion("7")))
         .isGreaterThanOrEqualTo(0);
   }
 }

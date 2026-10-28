@@ -6,10 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,16 +27,25 @@ public class NotiEventCompatibilityTest {
 
     ProjectCreatedEvent createdEvent =
         new ProjectCreatedEvent(
-            projectId, "Dự án Thiết kế UI/UX", "Mô tả dự án", "OPEN", employerId, "employer@example.com", now);
+            projectId,
+            "Dự án Thiết kế UI/UX",
+            "Mô tả dự án",
+            "OPEN",
+            employerId,
+            "employer@example.com",
+            now);
 
     org.springframework.amqp.core.Message createdAmqpMsg =
-        messageConverter.toMessage(createdEvent, new org.springframework.amqp.core.MessageProperties());
-    String createdJson = new String(createdAmqpMsg.getBody(), java.nio.charset.StandardCharsets.UTF_8);
+        messageConverter.toMessage(
+            createdEvent, new org.springframework.amqp.core.MessageProperties());
+    String createdJson =
+        new String(createdAmqpMsg.getBody(), java.nio.charset.StandardCharsets.UTF_8);
     JsonNode tree = new ObjectMapper().readTree(createdJson);
 
     // AC-4: Must be ISO-8601 string, never an array
     assertThat(tree.get("createdAt").isTextual())
-        .withFailMessage("createdAt must be serialized as ISO string, but was %s", tree.get("createdAt"))
+        .withFailMessage(
+            "createdAt must be serialized as ISO string, but was %s", tree.get("createdAt"))
         .isTrue();
     assertThat(tree.get("createdAt").asText()).isEqualTo("2026-10-27T14:30:45Z");
 
@@ -51,14 +58,23 @@ public class NotiEventCompatibilityTest {
 
     ProjectClosedEvent closedEvent =
         new ProjectClosedEvent(
-            projectId, "Dự án Thiết kế UI/UX", employerId, "employer@example.com", employerId, "USER", now);
+            projectId,
+            "Dự án Thiết kế UI/UX",
+            employerId,
+            "employer@example.com",
+            employerId,
+            "USER",
+            now);
 
     org.springframework.amqp.core.Message closedAmqpMsg =
-        messageConverter.toMessage(closedEvent, new org.springframework.amqp.core.MessageProperties());
-    String closedJson = new String(closedAmqpMsg.getBody(), java.nio.charset.StandardCharsets.UTF_8);
+        messageConverter.toMessage(
+            closedEvent, new org.springframework.amqp.core.MessageProperties());
+    String closedJson =
+        new String(closedAmqpMsg.getBody(), java.nio.charset.StandardCharsets.UTF_8);
     JsonNode closedTree = new ObjectMapper().readTree(closedJson);
     assertThat(closedTree.get("closedAt").isTextual())
-        .withFailMessage("closedAt must be serialized as ISO string, but was %s", closedTree.get("closedAt"))
+        .withFailMessage(
+            "closedAt must be serialized as ISO string, but was %s", closedTree.get("closedAt"))
         .isTrue();
 
     ProjectClosedEvent deserializedClosed =

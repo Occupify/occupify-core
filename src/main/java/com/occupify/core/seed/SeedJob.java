@@ -17,8 +17,7 @@ public record SeedJob(
     BigDecimal budgetMax,
     JobStatus status,
     List<String> skills,
-    List<String> requirements
-) {
+    List<String> requirements) {
   public SeedJob {
     if (quantity == null) {
       quantity = 1;

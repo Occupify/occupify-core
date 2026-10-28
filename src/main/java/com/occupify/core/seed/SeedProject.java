@@ -22,8 +22,7 @@ public record SeedProject(
     BigDecimal hoursPerDay,
     String duration,
     List<String> tags,
-    List<SeedJob> jobs
-) {
+    List<SeedJob> jobs) {
   public SeedProject {
     if (status == null) {
       status = ProjectStatus.OPEN;

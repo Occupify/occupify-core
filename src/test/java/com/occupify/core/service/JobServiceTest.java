@@ -1,13 +1,11 @@
 package com.occupify.core.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.occupify.core.dto.request.job.CreateJobRequest;
-import com.occupify.core.dto.request.job.UpdateJobRequest;
 import com.occupify.core.dto.response.job.JobDetailResponse;
 import com.occupify.core.entity.bid.Bid;
 import com.occupify.core.entity.job.Job;
@@ -17,7 +15,6 @@ import com.occupify.core.enums.BidStatus;
 import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.SalaryType;
 import com.occupify.core.enums.UserRole;
-import com.occupify.core.exception.contract.ContractException;
 import com.occupify.core.mapper.JobMapper;
 import com.occupify.core.repository.bid.BidRepository;
 import com.occupify.core.repository.job.JobRepository;
@@ -26,9 +23,6 @@ import com.occupify.core.repository.skill.SkillRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.impl.JobServiceImpl;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,7 +68,8 @@ class JobServiceTest {
     employerId = UUID.randomUUID();
     projectId = UUID.randomUUID();
 
-    employer = User.builder().id(employerId).email("emp@occupify.local").fullName("Employer").build();
+    employer =
+        User.builder().id(employerId).email("emp@occupify.local").fullName("Employer").build();
     project = Project.builder().employer(employer).title("Project Title").build();
     project.setId(projectId);
     employerContext = new UserContext(employerId, UserRole.USER, "emp@occupify.local");
@@ -95,11 +90,12 @@ class JobServiceTest {
 
     when(projectRepository.findWithEmployerById(projectId)).thenReturn(Optional.of(project));
     when(jobRepository.save(any(Job.class)))
-        .thenAnswer(inv -> {
-          Job j = inv.getArgument(0);
-          j.setId(UUID.randomUUID());
-          return j;
-        });
+        .thenAnswer(
+            inv -> {
+              Job j = inv.getArgument(0);
+              j.setId(UUID.randomUUID());
+              return j;
+            });
 
     JobDetailResponse expectedResponse =
         JobDetailResponse.builder()

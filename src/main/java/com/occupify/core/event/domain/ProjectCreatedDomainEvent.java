@@ -4,7 +4,4 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record ProjectCreatedDomainEvent(
-    UUID eventId,
-    UUID projectId,
-    Long version,
-    LocalDateTime occurredAt) {}
+    UUID eventId, UUID projectId, Long version, LocalDateTime occurredAt) {}

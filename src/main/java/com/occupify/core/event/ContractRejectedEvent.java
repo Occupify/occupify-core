@@ -28,6 +28,17 @@ public record ContractRejectedEvent(
       UUID freelancerId,
       String reason,
       LocalDateTime timestamp) {
-    this(eventId, contractId, jobId, employerId, freelancerId, reason, timestamp, null, null, null, null);
+    this(
+        eventId,
+        contractId,
+        jobId,
+        employerId,
+        freelancerId,
+        reason,
+        timestamp,
+        null,
+        null,
+        null,
+        null);
   }
 }

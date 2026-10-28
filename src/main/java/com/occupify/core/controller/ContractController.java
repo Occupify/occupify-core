@@ -44,91 +44,113 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(RouteConstants.CONTRACTS)
-@Tag(name = "Contracts", description = "Endpoints for creating, managing, accepting, completing, and canceling contracts")
+@Tag(
+    name = "Contracts",
+    description =
+        "Endpoints for creating, managing, accepting, completing, and canceling contracts")
 public class ContractController extends AbstractBaseController {
 
-    private final ContractService contractService;
+  private final ContractService contractService;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Create a contract", description = "Creates a new contract for an applicant or external freelancer with optional terms file")
-    public ResponseEntity<CreatedResponse<ContractDetailResponse>> createContract(
-            @RequestPart("data") @Valid CreateContractRequest request,
-            @RequestPart(value = "file", required = false) MultipartFile file,
-            @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        ContractDetailResponse response = contractService.createContract(request, file, userContext);
-        return created(response, MessageConstants.CONTRACT_CREATED);
-    }
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @Operation(
+      summary = "Create a contract",
+      description =
+          "Creates a new contract for an applicant or external freelancer with optional terms file")
+  public ResponseEntity<CreatedResponse<ContractDetailResponse>> createContract(
+      @RequestPart("data") @Valid CreateContractRequest request,
+      @RequestPart(value = "file", required = false) MultipartFile file,
+      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.createContract(request, file, userContext);
+    return created(response, MessageConstants.CONTRACT_CREATED);
+  }
 
-    @PutMapping(value = RouteConstants.CONTRACT_ID, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Update a contract", description = "Updates contract details and optionally replaces the terms file (PENDING only)")
-    public ResponseEntity<SingleResponse<ContractDetailResponse>> updateContract(
-            @PathVariable UUID id,
-            @RequestPart("data") @Valid UpdateContractRequest request,
-            @RequestPart(value = "file", required = false) MultipartFile file,
-            @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        ContractDetailResponse response = contractService.updateContract(id, request, file, userContext);
-        return successSingle(response, MessageConstants.CONTRACT_UPDATED);
-    }
+  @PutMapping(value = RouteConstants.CONTRACT_ID, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @Operation(
+      summary = "Update a contract",
+      description =
+          "Updates contract details and optionally replaces the terms file (PENDING only)")
+  public ResponseEntity<SingleResponse<ContractDetailResponse>> updateContract(
+      @PathVariable UUID id,
+      @RequestPart("data") @Valid UpdateContractRequest request,
+      @RequestPart(value = "file", required = false) MultipartFile file,
+      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response =
+        contractService.updateContract(id, request, file, userContext);
+    return successSingle(response, MessageConstants.CONTRACT_UPDATED);
+  }
 
-    @GetMapping
-    @Operation(summary = "Get paginated contracts", description = "Retrieves a paginated list of contracts for the current authenticated user")
-    public ResponseEntity<PageResponse<ContractSummaryResponse>> getContracts(
-            @ParameterObject ContractFilterRequest filter,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        Page<ContractSummaryResponse> page = contractService.getContracts(filter, pageable, userContext);
-        return paging(page, MessageConstants.CONTRACT_LIST_RETRIEVED);
-    }
+  @GetMapping
+  @Operation(
+      summary = "Get paginated contracts",
+      description = "Retrieves a paginated list of contracts for the current authenticated user")
+  public ResponseEntity<PageResponse<ContractSummaryResponse>> getContracts(
+      @ParameterObject ContractFilterRequest filter,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    Page<ContractSummaryResponse> page =
+        contractService.getContracts(filter, pageable, userContext);
+    return paging(page, MessageConstants.CONTRACT_LIST_RETRIEVED);
+  }
 
-    @GetMapping(RouteConstants.CONTRACT_ID)
-    @Operation(summary = "Get contract detail", description = "Retrieves full details of a specific contract by ID")
-    public ResponseEntity<SingleResponse<ContractDetailResponse>> getContractDetail(
-            @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        ContractDetailResponse response = contractService.getContractDetail(id, userContext);
-        return successSingle(response, MessageConstants.CONTRACT_RETRIEVED);
-    }
+  @GetMapping(RouteConstants.CONTRACT_ID)
+  @Operation(
+      summary = "Get contract detail",
+      description = "Retrieves full details of a specific contract by ID")
+  public ResponseEntity<SingleResponse<ContractDetailResponse>> getContractDetail(
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.getContractDetail(id, userContext);
+    return successSingle(response, MessageConstants.CONTRACT_RETRIEVED);
+  }
 
-    @PostMapping(RouteConstants.CONTRACT_CANCEL)
-    @Operation(summary = "Cancel a contract", description = "Cancels a contract by ID")
-    public ResponseEntity<SingleResponse<ContractDetailResponse>> cancelContract(
-            @PathVariable UUID id,
-            @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        ContractDetailResponse response = contractService.cancelContract(id, userContext);
-        return successSingle(response, MessageConstants.CONTRACT_CANCELLED);
-    }
+  @PostMapping(RouteConstants.CONTRACT_CANCEL)
+  @Operation(summary = "Cancel a contract", description = "Cancels a contract by ID")
+  public ResponseEntity<SingleResponse<ContractDetailResponse>> cancelContract(
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.cancelContract(id, userContext);
+    return successSingle(response, MessageConstants.CONTRACT_CANCELLED);
+  }
 
-    @PostMapping(RouteConstants.CONTRACT_ACCEPT)
-    @Operation(summary = "Accept a contract", description = "Accepts a pending contract by the freelancer/employee")
-    public ResponseEntity<SingleResponse<ContractDetailResponse>> acceptContract(
-            @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        ContractDetailResponse response = contractService.acceptContract(id, userContext);
-        return accepted(response, MessageConstants.CONTRACT_ACCEPTED);
-    }
+  @PostMapping(RouteConstants.CONTRACT_ACCEPT)
+  @Operation(
+      summary = "Accept a contract",
+      description = "Accepts a pending contract by the freelancer/employee")
+  public ResponseEntity<SingleResponse<ContractDetailResponse>> acceptContract(
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.acceptContract(id, userContext);
+    return accepted(response, MessageConstants.CONTRACT_ACCEPTED);
+  }
 
-    @PostMapping(RouteConstants.CONTRACT_REJECT)
-    @Operation(summary = "Reject a contract", description = "Rejects a pending contract offer by the freelancer/employee")
-    public ResponseEntity<SingleResponse<ContractDetailResponse>> rejectContract(
-            @PathVariable UUID id,
-            @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        ContractDetailResponse response = contractService.rejectContract(id, userContext);
-        return successSingle(response, MessageConstants.CONTRACT_REJECTED);
-    }
+  @PostMapping(RouteConstants.CONTRACT_REJECT)
+  @Operation(
+      summary = "Reject a contract",
+      description = "Rejects a pending contract offer by the freelancer/employee")
+  public ResponseEntity<SingleResponse<ContractDetailResponse>> rejectContract(
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.rejectContract(id, userContext);
+    return successSingle(response, MessageConstants.CONTRACT_REJECTED);
+  }
 
-    @PostMapping(RouteConstants.CONTRACT_COMPLETE)
-    @Operation(summary = "Complete a contract", description = "Completes an in-progress contract with rating and review by the employer")
-    public ResponseEntity<SingleResponse<ContractDetailResponse>> completeContract(
-            @PathVariable UUID id,
-            @Valid @RequestBody CompleteContractRequest request,
-            @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        ContractDetailResponse response = contractService.completeContract(id, request, userContext);
-        return successSingle(response, MessageConstants.CONTRACT_COMPLETED);
-    }
+  @PostMapping(RouteConstants.CONTRACT_COMPLETE)
+  @Operation(
+      summary = "Complete a contract",
+      description = "Completes an in-progress contract with rating and review by the employer")
+  public ResponseEntity<SingleResponse<ContractDetailResponse>> completeContract(
+      @PathVariable UUID id,
+      @Valid @RequestBody CompleteContractRequest request,
+      @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.completeContract(id, request, userContext);
+    return successSingle(response, MessageConstants.CONTRACT_COMPLETED);
+  }
 
-    @DeleteMapping(RouteConstants.CONTRACT_ID)
-    @Operation(summary = "Delete a contract", description = "Soft deletes a contract and rejects pending proposals")
-    public ResponseEntity<SuccessResponse> deleteContract(
-            @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
-        contractService.removeContract(id, userContext);
-        return success("Remove contract successfully");
-    }
+  @DeleteMapping(RouteConstants.CONTRACT_ID)
+  @Operation(
+      summary = "Delete a contract",
+      description = "Soft deletes a contract and rejects pending proposals")
+  public ResponseEntity<SuccessResponse> deleteContract(
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    contractService.removeContract(id, userContext);
+    return success("Remove contract successfully");
+  }
 }

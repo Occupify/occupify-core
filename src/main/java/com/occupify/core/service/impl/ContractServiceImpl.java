@@ -1,10 +1,8 @@
 package com.occupify.core.service.impl;
 
-import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.ContractFilterRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
-import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.CancellationContractResponse;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
@@ -39,7 +37,6 @@ import com.occupify.core.security.UserContext;
 import com.occupify.core.service.ContractService;
 import com.occupify.core.service.JobLifecycleService;
 import com.occupify.core.service.StorageService;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -116,8 +113,12 @@ public class ContractServiceImpl implements ContractService {
     if (bids != null) {
       for (Bid bid : bids) {
         boolean isCandidate =
-            (employee != null && bid.getFreelancer() != null && bid.getFreelancer().getId().equals(employee.getId()))
-                || (freelancerEmail != null && bid.getFreelancer() != null && freelancerEmail.equalsIgnoreCase(bid.getFreelancer().getEmail()));
+            (employee != null
+                    && bid.getFreelancer() != null
+                    && bid.getFreelancer().getId().equals(employee.getId()))
+                || (freelancerEmail != null
+                    && bid.getFreelancer() != null
+                    && freelancerEmail.equalsIgnoreCase(bid.getFreelancer().getEmail()));
         if (isCandidate) {
           bid.setStatus(BidStatus.ACCEPTED);
           bidRepository.save(bid);
@@ -154,9 +155,10 @@ public class ContractServiceImpl implements ContractService {
     contract = contractRepository.save(contract);
 
     // Publish ContractCreatedEvent with effective job fallback values
-    String employerName = (employer.getFullName() != null && !employer.getFullName().isBlank())
-        ? employer.getFullName()
-        : employer.getEmail();
+    String employerName =
+        (employer.getFullName() != null && !employer.getFullName().isBlank())
+            ? employer.getFullName()
+            : employer.getEmail();
     com.occupify.core.event.ContractCreatedEvent event =
         new com.occupify.core.event.ContractCreatedEvent(
             UUID.randomUUID(),
@@ -344,15 +346,14 @@ public class ContractServiceImpl implements ContractService {
     } catch (IllegalArgumentException ignored) {
     }
 
-    String employerEmail = contract.getEmployer() != null ? contract.getEmployer().getEmail() : null;
+    String employerEmail =
+        contract.getEmployer() != null ? contract.getEmployer().getEmail() : null;
     String employerName =
         (contract.getEmployer() != null && contract.getEmployer().getFullName() != null)
             ? contract.getEmployer().getFullName()
             : (employerEmail != null ? employerEmail : "Nhà tuyển dụng");
     String freelancerEmail =
-        contract.getEmployee() != null
-            ? contract.getEmployee().getEmail()
-            : userContext.email();
+        contract.getEmployee() != null ? contract.getEmployee().getEmail() : userContext.email();
     String freelancerName =
         (contract.getEmployee() != null && contract.getEmployee().getFullName() != null)
             ? contract.getEmployee().getFullName()
@@ -427,15 +428,14 @@ public class ContractServiceImpl implements ContractService {
     UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
     UUID jobId = contract.getJob() != null ? contract.getJob().getId() : null;
 
-    String employerEmail = contract.getEmployer() != null ? contract.getEmployer().getEmail() : null;
+    String employerEmail =
+        contract.getEmployer() != null ? contract.getEmployer().getEmail() : null;
     String employerName =
         (contract.getEmployer() != null && contract.getEmployer().getFullName() != null)
             ? contract.getEmployer().getFullName()
             : (employerEmail != null ? employerEmail : "Nhà tuyển dụng");
     String freelancerEmail =
-        contract.getEmployee() != null
-            ? contract.getEmployee().getEmail()
-            : userContext.email();
+        contract.getEmployee() != null ? contract.getEmployee().getEmail() : userContext.email();
     String freelancerName =
         (contract.getEmployee() != null && contract.getEmployee().getFullName() != null)
             ? contract.getEmployee().getFullName()

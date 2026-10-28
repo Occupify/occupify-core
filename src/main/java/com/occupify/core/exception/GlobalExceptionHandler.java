@@ -2,9 +2,9 @@ package com.occupify.core.exception;
 
 import com.occupify.core.dto.base.ErrorResponse;
 import com.occupify.core.exception.system.SystemErrorCode;
-import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

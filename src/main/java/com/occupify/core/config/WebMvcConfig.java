@@ -46,4 +46,3 @@ public class WebMvcConfig implements WebMvcConfigurer {
     converters.add(octetStreamConverter);
   }
 }
-

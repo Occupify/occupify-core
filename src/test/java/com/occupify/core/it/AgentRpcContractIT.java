@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.File;
+import com.occupify.core.service.ProjectService;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -17,14 +17,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.core.io.ClassPathResource;
-import org.mockito.Mockito;
-import com.occupify.core.service.ProjectService;
 
 public class AgentRpcContractIT extends AbstractIntegrationIT {
 
@@ -45,7 +44,8 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
   }
 
   private void seedContractFixtureData() {
-    UUID employerId = UUID.nameUUIDFromBytes("occupify-seed-employer-0".getBytes(StandardCharsets.UTF_8));
+    UUID employerId =
+        UUID.nameUUIDFromBytes("occupify-seed-employer-0".getBytes(StandardCharsets.UTF_8));
     jdbcTemplate.update(
         """
         INSERT INTO users (id, email, full_name, role, status, created_at, updated_at)
@@ -64,8 +64,12 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
         KNOWN_PROJECT_ID,
         employerId);
 
-    jdbcTemplate.update("INSERT INTO project_tag (project_id, tag) VALUES (?, 'Mobile App') ON CONFLICT DO NOTHING", KNOWN_PROJECT_ID);
-    jdbcTemplate.update("INSERT INTO project_tag (project_id, tag) VALUES (?, 'F&B') ON CONFLICT DO NOTHING", KNOWN_PROJECT_ID);
+    jdbcTemplate.update(
+        "INSERT INTO project_tag (project_id, tag) VALUES (?, 'Mobile App') ON CONFLICT DO NOTHING",
+        KNOWN_PROJECT_ID);
+    jdbcTemplate.update(
+        "INSERT INTO project_tag (project_id, tag) VALUES (?, 'F&B') ON CONFLICT DO NOTHING",
+        KNOWN_PROJECT_ID);
 
     UUID jobId = UUID.fromString("11111111-1111-1111-1111-111111111112");
     jdbcTemplate.update(
@@ -77,8 +81,12 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
         jobId,
         KNOWN_PROJECT_ID);
 
-    jdbcTemplate.update("INSERT INTO job_requirement (job_id, position, text) VALUES (?, 0, 'React Native 0.76') ON CONFLICT DO NOTHING", jobId);
-    jdbcTemplate.update("INSERT INTO job_requirement (job_id, position, text) VALUES (?, 1, 'TypeScript 5') ON CONFLICT DO NOTHING", jobId);
+    jdbcTemplate.update(
+        "INSERT INTO job_requirement (job_id, position, text) VALUES (?, 0, 'React Native 0.76') ON CONFLICT DO NOTHING",
+        jobId);
+    jdbcTemplate.update(
+        "INSERT INTO job_requirement (job_id, position, text) VALUES (?, 1, 'TypeScript 5') ON CONFLICT DO NOTHING",
+        jobId);
 
     // Sparse project
     jdbcTemplate.update(
@@ -112,7 +120,9 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
     try {
       return objectMapper.readTree(reply.getBody());
     } catch (Exception e) {
-      throw new RuntimeException("Failed to parse RPC response: " + new String(reply.getBody(), StandardCharsets.UTF_8), e);
+      throw new RuntimeException(
+          "Failed to parse RPC response: " + new String(reply.getBody(), StandardCharsets.UTF_8),
+          e);
     }
   }
 
@@ -162,7 +172,10 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
       } else if (Files.exists(fixturePath)) {
         expected = objectMapper.readTree(Files.readString(fixturePath, StandardCharsets.UTF_8));
       } else {
-        throw new AssertionError("Fixture file " + filename + " does not exist. Run with -Dcontracts.record=true to record it.");
+        throw new AssertionError(
+            "Fixture file "
+                + filename
+                + " does not exist. Run with -Dcontracts.record=true to record it.");
       }
       assertThat(reply).isEqualTo(expected);
     }
@@ -172,7 +185,9 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
   void repliesMatchFixtures() throws Exception {
     // 1. search.json
     JsonNode searchReply =
-        sendRpc("core.project.search", "{\"keyword\":\"Sample\",\"sort\":\"title,asc\",\"page\":0,\"size\":5}");
+        sendRpc(
+            "core.project.search",
+            "{\"keyword\":\"Sample\",\"sort\":\"title,asc\",\"page\":0,\"size\":5}");
     handleFixture("search.json", searchReply);
 
     // 2. get.json
@@ -180,7 +195,8 @@ public class AgentRpcContractIT extends AbstractIntegrationIT {
     handleFixture("get.json", getReply);
 
     // 3. get-sparse.json
-    JsonNode sparseReply = sendRpc("core.project.get", "{\"projectId\":\"" + SPARSE_PROJECT_ID + "\"}");
+    JsonNode sparseReply =
+        sendRpc("core.project.get", "{\"projectId\":\"" + SPARSE_PROJECT_ID + "\"}");
     handleFixture("get-sparse.json", sparseReply);
 
     // 4. get-404.json

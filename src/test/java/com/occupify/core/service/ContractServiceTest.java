@@ -6,11 +6,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.ContractFilterRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
-import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.CancellationContractResponse;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
@@ -403,8 +401,7 @@ class ContractServiceTest {
         ContractDetailResponse.builder().status(ContractStatus.CANCELLED).build();
     when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
 
-    ContractDetailResponse response =
-        contractService.cancelContract(contractId, employerContext);
+    ContractDetailResponse response = contractService.cancelContract(contractId, employerContext);
 
     assertThat(response.getStatus()).isEqualTo(ContractStatus.CANCELLED);
     assertThat(contract.getStatus()).isEqualTo(ContractStatus.CANCELLED);
@@ -499,8 +496,7 @@ class ContractServiceTest {
         ContractDetailResponse.builder().status(ContractStatus.CANCELLED).build();
     when(contractMapper.toDetailResponse(any(), any(), any())).thenReturn(mockResponse);
 
-    ContractDetailResponse response =
-        contractService.rejectContract(contractId, employeeContext);
+    ContractDetailResponse response = contractService.rejectContract(contractId, employeeContext);
 
     assertThat(response.getStatus()).isEqualTo(ContractStatus.CANCELLED);
     assertThat(contract.getStatus()).isEqualTo(ContractStatus.CANCELLED);
@@ -648,7 +644,8 @@ class ContractServiceTest {
   }
 
   @Test
-  @DisplayName("Should throw USER_NOT_FOUND when freelancer email does not exist in DB on contract creation")
+  @DisplayName(
+      "Should throw USER_NOT_FOUND when freelancer email does not exist in DB on contract creation")
   void shouldThrowUserNotFoundWhenFreelancerDoesNotExistInDbOnCreate() {
     CreateContractRequest request =
         CreateContractRequest.builder()
@@ -681,9 +678,7 @@ class ContractServiceTest {
     contract.setId(UUID.randomUUID());
 
     UpdateContractRequest request =
-        UpdateContractRequest.builder()
-            .freelancerGmail("nonexistent@test.local")
-            .build();
+        UpdateContractRequest.builder().freelancerGmail("nonexistent@test.local").build();
 
     when(contractRepository.findById(contract.getId())).thenReturn(Optional.of(contract));
     when(userRepository.findByEmail("nonexistent@test.local")).thenReturn(Optional.empty());
@@ -822,7 +817,8 @@ class ContractServiceTest {
     verify(jobRepository).save(job);
 
     // Verify ContractCreatedEvent published
-    verify(contractEventProducer).publishContractCreated(any(com.occupify.core.event.ContractCreatedEvent.class));
+    verify(contractEventProducer)
+        .publishContractCreated(any(com.occupify.core.event.ContractCreatedEvent.class));
   }
 
   @Test

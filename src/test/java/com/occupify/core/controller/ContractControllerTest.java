@@ -13,17 +13,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.occupify.core.constant.MessageConstants;
 import com.occupify.core.constant.RouteConstants;
-import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
-import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
 import com.occupify.core.dto.response.contract.ContractSummaryResponse;
 import com.occupify.core.enums.ContractStatus;
 import com.occupify.core.security.AuthenticatedUserArgumentResolver;
 import com.occupify.core.service.ContractService;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;

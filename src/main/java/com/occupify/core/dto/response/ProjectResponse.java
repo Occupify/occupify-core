@@ -32,4 +32,3 @@ public record ProjectResponse(
     Long version,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}
-

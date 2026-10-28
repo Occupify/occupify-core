@@ -205,8 +205,7 @@ public class RabbitMQConfig {
     idClassMapping.put("com.occupify.identity.event.UserActivatedEvent", UserActivatedEvent.class);
     idClassMapping.put("com.occupify.core.event.UserActivatedEvent", UserActivatedEvent.class);
     idClassMapping.put("UserActivatedEvent", UserActivatedEvent.class);
-    idClassMapping.put(
-        "com.occupify.core.event.ContractCreatedEvent", ContractCreatedEvent.class);
+    idClassMapping.put("com.occupify.core.event.ContractCreatedEvent", ContractCreatedEvent.class);
     idClassMapping.put("ContractCreatedEvent", ContractCreatedEvent.class);
     idClassMapping.put(
         "com.occupify.core.event.ContractAcceptedEvent", ContractAcceptedEvent.class);

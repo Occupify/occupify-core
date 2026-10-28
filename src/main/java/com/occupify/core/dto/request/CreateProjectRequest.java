@@ -35,4 +35,3 @@ public record CreateProjectRequest(
     @Size(max = 10, message = "Cannot exceed 10 tags")
         @UniqueElements(message = "Tags must be unique")
         List<@NotBlank @Size(max = 40, message = "Tag cannot exceed 40 characters") String> tags) {}
-

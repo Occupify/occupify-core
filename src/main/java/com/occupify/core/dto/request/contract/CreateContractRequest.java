@@ -13,10 +13,10 @@ public record CreateContractRequest(
     @NotNull(message = "Job ID is required") UUID jobId,
     String message,
     @NotBlank(message = "Freelancer email is required")
-    @JsonProperty("freelancer_gmail")
-    @JsonAlias({"freelancerEmail", "freelancer_email", "freelancerGmail"})
-    @Email(message = "Freelancer email must be a valid email format")
-    String freelancerGmail) {
+        @JsonProperty("freelancer_gmail")
+        @JsonAlias({"freelancerEmail", "freelancer_email", "freelancerGmail"})
+        @Email(message = "Freelancer email must be a valid email format")
+        String freelancerGmail) {
 
   public String freelancerEmail() {
     return freelancerGmail;

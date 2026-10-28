@@ -40,13 +40,17 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
-@Tag(name = "Jobs", description = "Endpoints for creating, listing, updating, and closing project jobs")
+@Tag(
+    name = "Jobs",
+    description = "Endpoints for creating, listing, updating, and closing project jobs")
 public class JobController extends AbstractBaseController {
 
   private final JobService jobService;
 
   @PostMapping(value = RouteConstants.JOBS, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @Operation(summary = "Create a job", description = "Creates a new job under a project with optional terms file")
+  @Operation(
+      summary = "Create a job",
+      description = "Creates a new job under a project with optional terms file")
   public ResponseEntity<CreatedResponse<JobDetailResponse>> createJob(
       @RequestPart("data") @Valid CreateJobRequest request,
       @RequestPart(value = "file", required = false) MultipartFile file,
@@ -55,8 +59,12 @@ public class JobController extends AbstractBaseController {
     return created(response, MessageConstants.JOB_CREATED);
   }
 
-  @PostMapping(value = RouteConstants.PROJECTS + "/{projectId}" + RouteConstants.JOBS, consumes = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Create a job under project", description = "Creates a new job explicitly under specified project")
+  @PostMapping(
+      value = RouteConstants.PROJECTS + "/{projectId}" + RouteConstants.JOBS,
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(
+      summary = "Create a job under project",
+      description = "Creates a new job explicitly under specified project")
   public ResponseEntity<CreatedResponse<JobDetailResponse>> createJobUnderProject(
       @PathVariable UUID projectId,
       @Valid @RequestBody CreateJobRequest request,
@@ -77,22 +85,29 @@ public class JobController extends AbstractBaseController {
   }
 
   @GetMapping(RouteConstants.PROJECTS + "/{projectId}" + RouteConstants.JOBS)
-  @Operation(summary = "Get jobs by project", description = "Retrieves paginated list of jobs under a given project")
+  @Operation(
+      summary = "Get jobs by project",
+      description = "Retrieves paginated list of jobs under a given project")
   public ResponseEntity<PageResponse<JobResponse>> getJobsByProject(
       @PathVariable UUID projectId,
-      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable) {
     Page<JobResponse> page = jobService.getJobsByProject(projectId, pageable);
     return paging(page, MessageConstants.JOB_LIST_RETRIEVED);
   }
 
   @GetMapping(RouteConstants.JOBS + RouteConstants.JOB_ID)
-  @Operation(summary = "Get job details", description = "Retrieves full details of a specific job by ID")
+  @Operation(
+      summary = "Get job details",
+      description = "Retrieves full details of a specific job by ID")
   public ResponseEntity<SingleResponse<JobDetailResponse>> getJobDetail(@PathVariable UUID id) {
     JobDetailResponse response = jobService.getJobDetail(id);
     return successSingle(response, MessageConstants.JOB_RETRIEVED);
   }
 
-  @PutMapping(value = RouteConstants.JOBS + RouteConstants.JOB_ID, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PutMapping(
+      value = RouteConstants.JOBS + RouteConstants.JOB_ID,
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(summary = "Update a job", description = "Updates job details and optional terms file")
   public ResponseEntity<SingleResponse<JobDetailResponse>> updateJob(
       @PathVariable UUID id,
@@ -106,7 +121,8 @@ public class JobController extends AbstractBaseController {
   @PatchMapping(RouteConstants.JOBS + RouteConstants.JOB_CLOSE)
   @Operation(
       summary = "Close job from project",
-      description = "Closes a job from the project when not yet a contract and rejects pending bids")
+      description =
+          "Closes a job from the project when not yet a contract and rejects pending bids")
   public ResponseEntity<SingleResponse<JobDetailResponse>> closeJob(
       @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
     JobDetailResponse response = jobService.closeJob(id, userContext);

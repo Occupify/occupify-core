@@ -18,8 +18,7 @@ import org.springframework.stereotype.Component;
 public class AgentProjectMapper {
 
   private static final Comparator<Job> JOB_COMPARATOR =
-      Comparator.comparing(
-              Job::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+      Comparator.comparing(Job::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
           .thenComparing(Job::getId, Comparator.nullsLast(Comparator.naturalOrder()));
 
   public AgentProjectResponse toResponse(

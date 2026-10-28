@@ -3,8 +3,6 @@ package com.occupify.core.controller;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -42,6 +40,7 @@ public class ProjectDetailsRestTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private UserRepository userRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
+
   @org.springframework.boot.test.mock.mockito.MockBean
   private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
 

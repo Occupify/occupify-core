@@ -195,8 +195,7 @@ public class JobServiceImpl implements JobService {
           log.warn("Failed to delete old terms file key: {}", job.getTermsFileKey(), ex);
         }
       }
-      job.setTermsFileKey(
-          storageService.uploadPrivateDocument("jobs/" + job.getId(), file));
+      job.setTermsFileKey(storageService.uploadPrivateDocument("jobs/" + job.getId(), file));
     }
 
     Job savedJob = jobRepository.save(job);
