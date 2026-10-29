@@ -178,6 +178,12 @@ public final class ProjectSpecification {
         predicates.add(criteriaBuilder.equal(root.get("employer").get("id"), filter.employerId()));
       }
 
+      // 5b. Exclude projects belonging to the searching user
+      if (filter.excludeEmployerId() != null) {
+        predicates.add(
+            criteriaBuilder.notEqual(root.get("employer").get("id"), filter.excludeEmployerId()));
+      }
+
       // 6. Period and ExperienceLevel filters
       if (filter.period() != null) {
         predicates.add(criteriaBuilder.equal(root.get("period"), filter.period()));

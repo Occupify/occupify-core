@@ -118,4 +118,29 @@ class ProjectSearchFilterControllerTest {
         .andExpect(jsonPath("$.data").isArray())
         .andExpect(jsonPath("$.data[0].id").value(activeProject.getId().toString()));
   }
+
+  @Test
+  void testSearchEndpoint_excludesSearchingUserOwnProjects() throws Exception {
+    // When searching as the project owner, own projects must be excluded
+    mockMvc
+        .perform(
+            get(RouteConstants.PROJECTS)
+                .header("X-User-Id", activeProject.getEmployer().getId())
+                .param("keyword", "quan ly tai chinh"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.statusCode").value(200))
+        .andExpect(jsonPath("$.data").isArray())
+        .andExpect(jsonPath("$.data").isEmpty());
+
+    // When searching as a different user, projects must be returned
+    mockMvc
+        .perform(
+            get(RouteConstants.PROJECTS)
+                .header("X-User-Id", java.util.UUID.randomUUID())
+                .param("keyword", "quan ly tai chinh"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.statusCode").value(200))
+        .andExpect(jsonPath("$.data").isArray())
+        .andExpect(jsonPath("$.data[0].id").value(activeProject.getId().toString()));
+  }
 }
