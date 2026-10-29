@@ -25,13 +25,12 @@ public final class ContractSpecification {
         predicates.add(criteriaBuilder.or(isEmployer, isEmployee));
       }
 
+      predicates.add(criteriaBuilder.isNull(root.get("deletedAt")));
+
       if (filter != null) {
         if (filter.projectId() != null) {
           predicates.add(
               criteriaBuilder.equal(root.get("job").get("project").get("id"), filter.projectId()));
-        }
-        if (filter.jobId() != null) {
-          predicates.add(criteriaBuilder.equal(root.get("job").get("id"), filter.jobId()));
         }
         if (filter.status() != null) {
           predicates.add(criteriaBuilder.equal(root.get("status"), filter.status()));

@@ -56,16 +56,14 @@ public class CoreEventsIT extends AbstractIntegrationIT {
     rabbitAdmin.declareQueue(coreEventsQueue);
     rabbitAdmin.declareBinding(
         BindingBuilder.bind(coreEventsQueue).to(coreExchange).with("project.*"));
-    rabbitAdmin.declareBinding(
-        BindingBuilder.bind(coreEventsQueue).to(coreExchange).with("job.#"));
+    rabbitAdmin.declareBinding(BindingBuilder.bind(coreEventsQueue).to(coreExchange).with("job.#"));
 
     TopicExchange notiExchange = new TopicExchange("occupify.notification.exchange", true, false);
     rabbitAdmin.declareExchange(notiExchange);
 
     notiEventsQueue = new Queue("test.noti.events.queue." + UUID.randomUUID(), false, false, false);
     rabbitAdmin.declareQueue(notiEventsQueue);
-    rabbitAdmin.declareBinding(
-        BindingBuilder.bind(notiEventsQueue).to(notiExchange).with("#"));
+    rabbitAdmin.declareBinding(BindingBuilder.bind(notiEventsQueue).to(notiExchange).with("#"));
 
     employer =
         userRepository.save(
@@ -99,7 +97,9 @@ public class CoreEventsIT extends AbstractIntegrationIT {
 
   private JsonNode receiveJson(String queueName, long timeoutMs) throws Exception {
     Message msg = rabbitTemplate.receive(queueName, timeoutMs);
-    assertThat(msg).withFailMessage("Expected message on %s within %d ms", queueName, timeoutMs).isNotNull();
+    assertThat(msg)
+        .withFailMessage("Expected message on %s within %d ms", queueName, timeoutMs)
+        .isNotNull();
     return objectMapper.readTree(new String(msg.getBody(), StandardCharsets.UTF_8));
   }
 
@@ -248,7 +248,8 @@ public class CoreEventsIT extends AbstractIntegrationIT {
 
     Message notiMsg = rabbitTemplate.receive(notiEventsQueue.getName(), 3000L);
     assertThat(notiMsg).isNotNull();
-    JsonNode notiJson = objectMapper.readTree(new String(notiMsg.getBody(), StandardCharsets.UTF_8));
+    JsonNode notiJson =
+        objectMapper.readTree(new String(notiMsg.getBody(), StandardCharsets.UTF_8));
     assertThat(notiJson.get("employerEmail").asText()).isEqualTo("employer.events@example.com");
   }
 
@@ -284,7 +285,8 @@ public class CoreEventsIT extends AbstractIntegrationIT {
         freelancer.getId(),
         jobId);
 
-    // Accept contract -> Job becomes FILLED -> publishes job.status.changed to occupify.core.exchange
+    // Accept contract -> Job becomes FILLED -> publishes job.status.changed to
+    // occupify.core.exchange
     mockMvc
         .perform(
             post(RouteConstants.CONTRACTS + "/" + contractId + "/accept")

@@ -20,6 +20,7 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,11 +45,17 @@ public class Job extends AbstractBaseEntity {
   @JoinColumn(name = "project_id", nullable = false)
   private Project project;
 
+  @Column(name = "role", length = 100)
+  private String role;
+
   @Column(name = "title", nullable = false)
   private String title;
 
   @Column(name = "description", columnDefinition = "TEXT")
   private String description;
+
+  @Column(name = "budget", precision = 12, scale = 2)
+  private BigDecimal budget;
 
   @Builder.Default
   @Column(name = "quantity", nullable = false)
@@ -63,6 +70,18 @@ public class Job extends AbstractBaseEntity {
 
   @Column(name = "budget_max", precision = 12, scale = 2)
   private BigDecimal budgetMax;
+
+  @Column(name = "terms_file_key", length = 500)
+  private String termsFileKey;
+
+  @Column(name = "started_at")
+  private LocalDateTime startedAt;
+
+  @Column(name = "finished_at")
+  private LocalDateTime finishedAt;
+
+  @Column(name = "deleted_at")
+  private LocalDateTime deletedAt;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 50)

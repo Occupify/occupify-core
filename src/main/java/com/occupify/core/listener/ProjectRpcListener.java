@@ -70,7 +70,8 @@ public class ProjectRpcListener {
       int size = (request.size() != null && request.size() > 0) ? Math.min(request.size(), 50) : 20;
 
       Pageable pageable = PageRequest.of(page, size, sort);
-      Page<AgentProjectResponse> result = projectService.getAgentProjects(request.toFilter(), pageable);
+      Page<AgentProjectResponse> result =
+          projectService.getAgentProjects(request.toFilter(), pageable);
 
       log.info(
           "[Agent RPC][traceId={}][toolCallId={}] Search returned {} projects (page {}/{})",

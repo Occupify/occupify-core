@@ -17,7 +17,10 @@ import lombok.Setter;
 @Builder
 public class ContractSummaryResponse {
   private UUID id;
+  private String role;
   private String title;
+  private String freelancerEmail;
+  private String message;
   private UUID employerId;
   private String employerName;
   private UUID employeeId;

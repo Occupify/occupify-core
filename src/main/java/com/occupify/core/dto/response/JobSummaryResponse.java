@@ -24,4 +24,3 @@ public record JobSummaryResponse(
     Long version,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}
-

@@ -40,7 +40,8 @@ public class SeedCatalogLoader implements ApplicationRunner {
       NamedParameterJdbcTemplate jdbcTemplate,
       ObjectMapper objectMapper,
       Environment environment,
-      @Value("${app.seed.catalog-path:classpath:seed/sample-catalog.json}") Resource defaultCatalogResource) {
+      @Value("${app.seed.catalog-path:classpath:seed/sample-catalog.json}")
+          Resource defaultCatalogResource) {
     this.jdbcTemplate = jdbcTemplate;
     this.objectMapper = objectMapper;
     this.environment = environment;
@@ -55,7 +56,8 @@ public class SeedCatalogLoader implements ApplicationRunner {
 
   public void checkProdProfile() {
     if (environment.acceptsProfiles(Profiles.of("prod"))) {
-      throw new IllegalStateException("Seed profile is strictly forbidden when prod profile is active");
+      throw new IllegalStateException(
+          "Seed profile is strictly forbidden when prod profile is active");
     }
   }
 
@@ -63,7 +65,8 @@ public class SeedCatalogLoader implements ApplicationRunner {
     checkProdProfile();
     if (defaultCatalogResource != null && defaultCatalogResource.exists()) {
       try (InputStream is = defaultCatalogResource.getInputStream()) {
-        List<SeedProject> projects = objectMapper.readValue(is, new TypeReference<List<SeedProject>>() {});
+        List<SeedProject> projects =
+            objectMapper.readValue(is, new TypeReference<List<SeedProject>>() {});
         loadCatalog(projects);
       } catch (Exception e) {
         throw new RuntimeException("Failed to load default seed catalog", e);
@@ -88,7 +91,8 @@ public class SeedCatalogLoader implements ApplicationRunner {
   public void loadCatalogFromJson(String json) {
     checkProdProfile();
     try {
-      List<SeedProject> projects = objectMapper.readValue(json, new TypeReference<List<SeedProject>>() {});
+      List<SeedProject> projects =
+          objectMapper.readValue(json, new TypeReference<List<SeedProject>>() {});
       loadCatalog(projects);
     } catch (RuntimeException e) {
       throw e;
@@ -116,16 +120,19 @@ public class SeedCatalogLoader implements ApplicationRunner {
       if (project.hoursPerDay() != null) {
         if (project.hoursPerDay().compareTo(BigDecimal.valueOf(0.5)) < 0
             || project.hoursPerDay().compareTo(BigDecimal.valueOf(24.0)) > 0) {
-          throw new IllegalArgumentException("hoursPerDay must be between 0.5 and 24.0: " + project.hoursPerDay());
+          throw new IllegalArgumentException(
+              "hoursPerDay must be between 0.5 and 24.0: " + project.hoursPerDay());
         }
       }
 
       if (project.location() != null && project.location().length() > 120) {
-        throw new IllegalArgumentException("location exceeds 120 characters: " + project.location().length());
+        throw new IllegalArgumentException(
+            "location exceeds 120 characters: " + project.location().length());
       }
 
       if (project.duration() != null && project.duration().length() > 60) {
-        throw new IllegalArgumentException("duration exceeds 60 characters: " + project.duration().length());
+        throw new IllegalArgumentException(
+            "duration exceeds 60 characters: " + project.duration().length());
       }
 
       if (project.tags() != null) {
@@ -149,11 +156,13 @@ public class SeedCatalogLoader implements ApplicationRunner {
 
           if (job.requirements() != null) {
             if (job.requirements().size() > 20) {
-              throw new IllegalArgumentException("requirements count exceeds 20: " + job.requirements().size());
+              throw new IllegalArgumentException(
+                  "requirements count exceeds 20: " + job.requirements().size());
             }
             for (String req : job.requirements()) {
               if (req != null && req.length() > 300) {
-                throw new IllegalArgumentException("requirement exceeds 300 characters: " + req.length());
+                throw new IllegalArgumentException(
+                    "requirement exceeds 300 characters: " + req.length());
               }
             }
           }
@@ -164,14 +173,17 @@ public class SeedCatalogLoader implements ApplicationRunner {
 
   private void writeSyntheticFreelancers() {
     for (int i = 0; i < 20; i++) {
-      UUID freelancerId = UUID.nameUUIDFromBytes(("occupify-seed-freelancer-" + i).getBytes(StandardCharsets.UTF_8));
+      UUID freelancerId =
+          UUID.nameUUIDFromBytes(
+              ("occupify-seed-freelancer-" + i).getBytes(StandardCharsets.UTF_8));
       String email = "seed-freelancer-" + i + "@example.com";
       String fullName = "Seed Freelancer " + i;
 
-      MapSqlParameterSource params = new MapSqlParameterSource()
-          .addValue("id", freelancerId)
-          .addValue("email", email)
-          .addValue("fullName", fullName);
+      MapSqlParameterSource params =
+          new MapSqlParameterSource()
+              .addValue("id", freelancerId)
+              .addValue("email", email)
+              .addValue("fullName", fullName);
 
       jdbcTemplate.update(
           """
@@ -193,14 +205,17 @@ public class SeedCatalogLoader implements ApplicationRunner {
     for (int i = 0; i < projects.size(); i++) {
       SeedProject project = projects.get(i);
       int employerIndex = i / 10;
-      UUID employerId = UUID.nameUUIDFromBytes(("occupify-seed-employer-" + employerIndex).getBytes(StandardCharsets.UTF_8));
+      UUID employerId =
+          UUID.nameUUIDFromBytes(
+              ("occupify-seed-employer-" + employerIndex).getBytes(StandardCharsets.UTF_8));
       String employerEmail = "seed-employer-" + employerIndex + "@example.com";
       String employerName = "Seed Employer " + employerIndex;
 
-      MapSqlParameterSource empParams = new MapSqlParameterSource()
-          .addValue("id", employerId)
-          .addValue("email", employerEmail)
-          .addValue("fullName", employerName);
+      MapSqlParameterSource empParams =
+          new MapSqlParameterSource()
+              .addValue("id", employerId)
+              .addValue("email", employerEmail)
+              .addValue("fullName", employerName);
 
       jdbcTemplate.update(
           """
@@ -215,19 +230,22 @@ public class SeedCatalogLoader implements ApplicationRunner {
           empParams);
 
       UUID projectId = UUID.fromString(project.id());
-      MapSqlParameterSource projParams = new MapSqlParameterSource()
-          .addValue("id", projectId)
-          .addValue("employerId", employerId)
-          .addValue("title", project.title())
-          .addValue("description", project.description())
-          .addValue("startPrice", project.startPrice())
-          .addValue("period", project.period() != null ? project.period().name() : null)
-          .addValue("dueDate", project.dueDate())
-          .addValue("experienceLevel", project.experienceLevel() != null ? project.experienceLevel().name() : null)
-          .addValue("status", project.status() != null ? project.status().name() : "OPEN")
-          .addValue("location", project.location())
-          .addValue("hoursPerDay", project.hoursPerDay())
-          .addValue("duration", project.duration());
+      MapSqlParameterSource projParams =
+          new MapSqlParameterSource()
+              .addValue("id", projectId)
+              .addValue("employerId", employerId)
+              .addValue("title", project.title())
+              .addValue("description", project.description())
+              .addValue("startPrice", project.startPrice())
+              .addValue("period", project.period() != null ? project.period().name() : null)
+              .addValue("dueDate", project.dueDate())
+              .addValue(
+                  "experienceLevel",
+                  project.experienceLevel() != null ? project.experienceLevel().name() : null)
+              .addValue("status", project.status() != null ? project.status().name() : "OPEN")
+              .addValue("location", project.location())
+              .addValue("hoursPerDay", project.hoursPerDay())
+              .addValue("duration", project.duration());
 
       jdbcTemplate.update(
           """
@@ -262,10 +280,11 @@ public class SeedCatalogLoader implements ApplicationRunner {
           projParams);
 
       // Project tags
-      List<String> existingTags = jdbcTemplate.queryForList(
-          "SELECT tag FROM project_tag WHERE project_id = :projectId",
-          new MapSqlParameterSource("projectId", projectId),
-          String.class);
+      List<String> existingTags =
+          jdbcTemplate.queryForList(
+              "SELECT tag FROM project_tag WHERE project_id = :projectId",
+              new MapSqlParameterSource("projectId", projectId),
+              String.class);
       Set<String> existingTagSet = new HashSet<>(existingTags);
       Set<String> newTagSet = new HashSet<>(project.tags() != null ? project.tags() : List.of());
 
@@ -285,16 +304,17 @@ public class SeedCatalogLoader implements ApplicationRunner {
         for (SeedJob job : project.jobs()) {
           totalJobs++;
           UUID jobId = UUID.fromString(job.id());
-          MapSqlParameterSource jobParams = new MapSqlParameterSource()
-              .addValue("id", jobId)
-              .addValue("projectId", projectId)
-              .addValue("title", job.title())
-              .addValue("description", job.description())
-              .addValue("quantity", job.quantity() != null ? job.quantity() : 1)
-              .addValue("salaryType", job.salaryType() != null ? job.salaryType().name() : null)
-              .addValue("budgetMin", job.budgetMin())
-              .addValue("budgetMax", job.budgetMax())
-              .addValue("status", job.status() != null ? job.status().name() : "RECRUITING");
+          MapSqlParameterSource jobParams =
+              new MapSqlParameterSource()
+                  .addValue("id", jobId)
+                  .addValue("projectId", projectId)
+                  .addValue("title", job.title())
+                  .addValue("description", job.description())
+                  .addValue("quantity", job.quantity() != null ? job.quantity() : 1)
+                  .addValue("salaryType", job.salaryType() != null ? job.salaryType().name() : null)
+                  .addValue("budgetMin", job.budgetMin())
+                  .addValue("budgetMax", job.budgetMax())
+                  .addValue("status", job.status() != null ? job.status().name() : "RECRUITING");
 
           jdbcTemplate.update(
               """
@@ -322,10 +342,11 @@ public class SeedCatalogLoader implements ApplicationRunner {
               jobParams);
 
           // Job requirements
-          List<String> existingReqs = jdbcTemplate.queryForList(
-              "SELECT text FROM job_requirement WHERE job_id = :jobId ORDER BY position",
-              new MapSqlParameterSource("jobId", jobId),
-              String.class);
+          List<String> existingReqs =
+              jdbcTemplate.queryForList(
+                  "SELECT text FROM job_requirement WHERE job_id = :jobId ORDER BY position",
+                  new MapSqlParameterSource("jobId", jobId),
+                  String.class);
           List<String> newReqs = job.requirements() != null ? job.requirements() : List.of();
 
           if (!existingReqs.equals(newReqs)) {
@@ -346,15 +367,18 @@ public class SeedCatalogLoader implements ApplicationRunner {
             List<UUID> resolvedSkillIds = new ArrayList<>();
             for (String skillName : job.skills()) {
               if (skillName == null || skillName.isBlank()) continue;
-              List<Map<String, Object>> skillRows = jdbcTemplate.queryForList(
-                  "SELECT id FROM skills WHERE lower(name) = lower(:skillName)",
-                  new MapSqlParameterSource("skillName", skillName.trim()));
+              List<Map<String, Object>> skillRows =
+                  jdbcTemplate.queryForList(
+                      "SELECT id FROM skills WHERE lower(name) = lower(:skillName)",
+                      new MapSqlParameterSource("skillName", skillName.trim()));
 
               UUID skillId;
               if (!skillRows.isEmpty()) {
                 skillId = (UUID) skillRows.get(0).get("id");
               } else {
-                skillId = UUID.nameUUIDFromBytes(skillName.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
+                skillId =
+                    UUID.nameUUIDFromBytes(
+                        skillName.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
                 jdbcTemplate.update(
                     """
                     INSERT INTO skills (id, name, created_at, updated_at)
@@ -366,10 +390,11 @@ public class SeedCatalogLoader implements ApplicationRunner {
               resolvedSkillIds.add(skillId);
             }
 
-            List<UUID> existingSkillIds = jdbcTemplate.queryForList(
-                "SELECT skill_id FROM job_skills WHERE job_id = :jobId",
-                new MapSqlParameterSource("jobId", jobId),
-                UUID.class);
+            List<UUID> existingSkillIds =
+                jdbcTemplate.queryForList(
+                    "SELECT skill_id FROM job_skills WHERE job_id = :jobId",
+                    new MapSqlParameterSource("jobId", jobId),
+                    UUID.class);
             Set<UUID> existingSkillSet = new HashSet<>(existingSkillIds);
             Set<UUID> newSkillSet = new HashSet<>(resolvedSkillIds);
 
@@ -388,6 +413,7 @@ public class SeedCatalogLoader implements ApplicationRunner {
       }
     }
 
-    log.info("Seeding completed successfully: {} projects, {} jobs seeded", projects.size(), totalJobs);
+    log.info(
+        "Seeding completed successfully: {} projects, {} jobs seeded", projects.size(), totalJobs);
   }
 }

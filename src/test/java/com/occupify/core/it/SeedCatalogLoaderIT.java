@@ -71,14 +71,17 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
   @Test
   void loadsSampleWithFileIds() {
     // Verifies that sample catalogue loads with exact file IDs and relations
-    Integer projectCount = jdbcTemplate.queryForObject("SELECT count(*) FROM projects", Integer.class);
+    Integer projectCount =
+        jdbcTemplate.queryForObject("SELECT count(*) FROM projects", Integer.class);
     assertThat(projectCount).isGreaterThanOrEqualTo(1);
 
     List<Map<String, Object>> rows =
-        jdbcTemplate.queryForList("SELECT id, title, hours_per_day, location, duration, version FROM projects");
+        jdbcTemplate.queryForList(
+            "SELECT id, title, hours_per_day, location, duration, version FROM projects");
     assertThat(rows).isNotEmpty();
 
-    Integer jobReqs = jdbcTemplate.queryForObject("SELECT count(*) FROM job_requirement", Integer.class);
+    Integer jobReqs =
+        jdbcTemplate.queryForObject("SELECT count(*) FROM job_requirement", Integer.class);
     assertThat(jobReqs).isNotNull();
   }
 
@@ -152,7 +155,8 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
             "jobs": []
           }
         ]
-        """.formatted(UUID.randomUUID());
+        """
+            .formatted(UUID.randomUUID());
     Path tempFile = Files.createTempFile("limit-violation-", ".json");
     try {
       Files.writeString(tempFile, limitViolationJson, StandardCharsets.UTF_8);
@@ -178,7 +182,9 @@ public class SeedCatalogLoaderIT extends AbstractIntegrationIT {
               Integer.class,
               expectedId,
               expectedEmail);
-      assertThat(count).withFailMessage("Missing synthetic freelancer %s", expectedEmail).isEqualTo(1);
+      assertThat(count)
+          .withFailMessage("Missing synthetic freelancer %s", expectedEmail)
+          .isEqualTo(1);
     }
   }
 

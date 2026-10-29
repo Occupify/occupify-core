@@ -39,16 +39,23 @@ spring:
 app:
   rabbitmq:
     exchange: ${RABBITMQ_NOTIFICATION_EXCHANGE:occupify.notification.exchange}
+    project-exchange: ${RABBITMQ_PROJECT_EXCHANGE:occupify.project.exchange}
+    user-exchange: ${RABBITMQ_USER_EXCHANGE:occupify.user.exchange}
     core-exchange: ${RABBITMQ_CORE_EXCHANGE:occupify.core.exchange}
     project-created-routing-key: ${RABBITMQ_PROJECT_CREATED_ROUTING_KEY:project.created}
     project-closed-routing-key: ${RABBITMQ_PROJECT_CLOSED_ROUTING_KEY:project.closed}
     bid-created-routing-key: ${RABBITMQ_BID_CREATED_ROUTING_KEY:bid.created}
     bid-cancelled-routing-key: ${RABBITMQ_BID_CANCELLED_ROUTING_KEY:bid.cancelled}
     user-queue: ${RABBITMQ_USER_QUEUE:occupify.core.user.queue}
-    user-registered-routing-key: ${RABBITMQ_USER_REGISTERED_ROUTING_KEY:user.registered}
+    user-activated-routing-key: ${RABBITMQ_USER_ACTIVATED_ROUTING_KEY:user.activated}
     dlx-exchange: ${RABBITMQ_DLX_EXCHANGE:occupify.core.dlx}
     dlq-queue: ${RABBITMQ_USER_DLQ:occupify.core.user.dlq}
     dlq-routing-key: ${RABBITMQ_USER_DLQ_ROUTING_KEY:user.dlq}
+    contract-exchange: ${RABBITMQ_CONTRACT_EXCHANGE:occupify.contract.exchange}
+    contract-accepted-routing-key: ${RABBITMQ_CONTRACT_ACCEPTED_ROUTING_KEY:contract.accepted}
+    contract-rejected-routing-key: ${RABBITMQ_CONTRACT_REJECTED_ROUTING_KEY:contract.rejected}
+    contract-core-queue: ${RABBITMQ_CONTRACT_CORE_QUEUE:occupify.core.contract.queue}
+    contract-compensation-routing-key: ${RABBITMQ_CONTRACT_COMPENSATION_ROUTING_KEY:contract.compensation.*}
     agent-rpc-exchange: ${RABBITMQ_AGENT_RPC_EXCHANGE:occupify.agent.rpc}
     project-search-queue: ${RABBITMQ_PROJECT_SEARCH_QUEUE:occupify.core.rpc.project.search}
     project-search-routing-key: ${RABBITMQ_PROJECT_SEARCH_ROUTING_KEY:core.project.search}

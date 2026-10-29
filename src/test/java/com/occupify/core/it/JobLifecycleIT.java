@@ -3,7 +3,6 @@ package com.occupify.core.it;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -127,8 +126,7 @@ public class JobLifecycleIT extends AbstractIntegrationIT {
         .andExpect(status().isOk());
 
     String statusAfterFirst =
-        jdbcTemplate.queryForObject(
-            "SELECT status FROM job WHERE id = ?", String.class, jobId);
+        jdbcTemplate.queryForObject("SELECT status FROM job WHERE id = ?", String.class, jobId);
     assertThat(statusAfterFirst).isEqualTo(JobStatus.RECRUITING.name());
 
     // Accept contract 2: active = 2 >= 2 -> Job becomes FILLED
@@ -140,8 +138,7 @@ public class JobLifecycleIT extends AbstractIntegrationIT {
         .andExpect(status().isOk());
 
     String statusAfterSecond =
-        jdbcTemplate.queryForObject(
-            "SELECT status FROM job WHERE id = ?", String.class, jobId);
+        jdbcTemplate.queryForObject("SELECT status FROM job WHERE id = ?", String.class, jobId);
     assertThat(statusAfterSecond).isEqualTo(JobStatus.FILLED.name());
 
     // Cancel contract 1: active = 1 < 2 -> Job transitions back to RECRUITING
@@ -155,8 +152,7 @@ public class JobLifecycleIT extends AbstractIntegrationIT {
         .andExpect(status().isOk());
 
     String statusAfterCancel =
-        jdbcTemplate.queryForObject(
-            "SELECT status FROM job WHERE id = ?", String.class, jobId);
+        jdbcTemplate.queryForObject("SELECT status FROM job WHERE id = ?", String.class, jobId);
     assertThat(statusAfterCancel).isEqualTo(JobStatus.RECRUITING.name());
   }
 
@@ -209,33 +205,35 @@ public class JobLifecycleIT extends AbstractIntegrationIT {
     CountDownLatch doneLatch = new CountDownLatch(2);
     AtomicInteger successCount = new AtomicInteger(0);
 
-    executor.submit(() -> {
-      try {
-        startLatch.await();
-        mockMvc.perform(
-            post(RouteConstants.CONTRACTS + "/" + c1 + "/accept")
-                .header("X-User-Id", freelancer1.getId().toString())
-                .header("X-User-Role", "USER"));
-        successCount.incrementAndGet();
-      } catch (Exception ignored) {
-      } finally {
-        doneLatch.countDown();
-      }
-    });
+    executor.submit(
+        () -> {
+          try {
+            startLatch.await();
+            mockMvc.perform(
+                post(RouteConstants.CONTRACTS + "/" + c1 + "/accept")
+                    .header("X-User-Id", freelancer1.getId().toString())
+                    .header("X-User-Role", "USER"));
+            successCount.incrementAndGet();
+          } catch (Exception ignored) {
+          } finally {
+            doneLatch.countDown();
+          }
+        });
 
-    executor.submit(() -> {
-      try {
-        startLatch.await();
-        mockMvc.perform(
-            post(RouteConstants.CONTRACTS + "/" + c2 + "/accept")
-                .header("X-User-Id", freelancer2.getId().toString())
-                .header("X-User-Role", "USER"));
-        successCount.incrementAndGet();
-      } catch (Exception ignored) {
-      } finally {
-        doneLatch.countDown();
-      }
-    });
+    executor.submit(
+        () -> {
+          try {
+            startLatch.await();
+            mockMvc.perform(
+                post(RouteConstants.CONTRACTS + "/" + c2 + "/accept")
+                    .header("X-User-Id", freelancer2.getId().toString())
+                    .header("X-User-Role", "USER"));
+            successCount.incrementAndGet();
+          } catch (Exception ignored) {
+          } finally {
+            doneLatch.countDown();
+          }
+        });
 
     startLatch.countDown();
     boolean finished = doneLatch.await(5, TimeUnit.SECONDS);
@@ -243,8 +241,7 @@ public class JobLifecycleIT extends AbstractIntegrationIT {
     assertThat(finished).isTrue();
 
     String jobStatus =
-        jdbcTemplate.queryForObject(
-            "SELECT status FROM job WHERE id = ?", String.class, jobId);
+        jdbcTemplate.queryForObject("SELECT status FROM job WHERE id = ?", String.class, jobId);
     assertThat(jobStatus).isEqualTo(JobStatus.FILLED.name());
   }
 

@@ -54,8 +54,10 @@ public class AgentRpcRoundTripIT extends AbstractIntegrationIT {
         testProjectId,
         testEmployerId);
 
-    jdbcTemplate.update("INSERT INTO project_tag (project_id, tag) VALUES (?, 'Fintech')", testProjectId);
-    jdbcTemplate.update("INSERT INTO project_tag (project_id, tag) VALUES (?, 'AI')", testProjectId);
+    jdbcTemplate.update(
+        "INSERT INTO project_tag (project_id, tag) VALUES (?, 'Fintech')", testProjectId);
+    jdbcTemplate.update(
+        "INSERT INTO project_tag (project_id, tag) VALUES (?, 'AI')", testProjectId);
 
     jdbcTemplate.update(
         """
@@ -65,8 +67,11 @@ public class AgentRpcRoundTripIT extends AbstractIntegrationIT {
         testJobId,
         testProjectId);
 
-    jdbcTemplate.update("INSERT INTO job_requirement (job_id, position, text) VALUES (?, 0, 'Java 25')", testJobId);
-    jdbcTemplate.update("INSERT INTO job_requirement (job_id, position, text) VALUES (?, 1, 'PostgreSQL')", testJobId);
+    jdbcTemplate.update(
+        "INSERT INTO job_requirement (job_id, position, text) VALUES (?, 0, 'Java 25')", testJobId);
+    jdbcTemplate.update(
+        "INSERT INTO job_requirement (job_id, position, text) VALUES (?, 1, 'PostgreSQL')",
+        testJobId);
   }
 
   @AfterEach
@@ -87,14 +92,18 @@ public class AgentRpcRoundTripIT extends AbstractIntegrationIT {
     try {
       return objectMapper.readTree(reply.getBody());
     } catch (Exception e) {
-      throw new RuntimeException("Failed to parse RPC response: " + new String(reply.getBody(), StandardCharsets.UTF_8), e);
+      throw new RuntimeException(
+          "Failed to parse RPC response: " + new String(reply.getBody(), StandardCharsets.UTF_8),
+          e);
     }
   }
 
   @Test
   void searchReturnsIsoDatesRequirementsAndVersion() {
     JsonNode reply =
-        sendRpc("core.project.search", "{\"keyword\":\"Sample\",\"sort\":\"createdAt,desc\",\"page\":0,\"size\":5}");
+        sendRpc(
+            "core.project.search",
+            "{\"keyword\":\"Sample\",\"sort\":\"createdAt,desc\",\"page\":0,\"size\":5}");
     assertThat(reply.get("statusCode").asInt()).isEqualTo(200);
 
     JsonNode data = reply.get("data");

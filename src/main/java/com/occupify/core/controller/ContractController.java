@@ -5,11 +5,10 @@ import com.occupify.core.constant.RouteConstants;
 import com.occupify.core.dto.base.CreatedResponse;
 import com.occupify.core.dto.base.PageResponse;
 import com.occupify.core.dto.base.SingleResponse;
-import com.occupify.core.dto.request.contract.CancelContractRequest;
+import com.occupify.core.dto.base.SuccessResponse;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.ContractFilterRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
-import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
 import com.occupify.core.dto.response.contract.ContractSummaryResponse;
@@ -30,6 +29,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -104,30 +104,11 @@ public class ContractController extends AbstractBaseController {
     return successSingle(response, MessageConstants.CONTRACT_RETRIEVED);
   }
 
-  @PostMapping(value = RouteConstants.CONTRACT_CANCEL, consumes = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Cancel a contract (JSON)", description = "Cancels a contract with a reason")
+  @PostMapping(RouteConstants.CONTRACT_CANCEL)
+  @Operation(summary = "Cancel a contract", description = "Cancels a contract by ID")
   public ResponseEntity<SingleResponse<ContractDetailResponse>> cancelContract(
-      @PathVariable UUID id,
-      @Valid @RequestBody CancelContractRequest request,
-      @Parameter(hidden = true) @Authenticated UserContext userContext) {
-    ContractDetailResponse response =
-        contractService.cancelContract(id, request, null, userContext);
-    return successSingle(response, MessageConstants.CONTRACT_CANCELLED);
-  }
-
-  @PostMapping(
-      value = RouteConstants.CONTRACT_CANCEL,
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @Operation(
-      summary = "Cancel a contract (Multipart)",
-      description = "Cancels a contract with a reason and optional evidence file")
-  public ResponseEntity<SingleResponse<ContractDetailResponse>> cancelContractMultipart(
-      @PathVariable UUID id,
-      @RequestPart("data") @Valid CancelContractRequest request,
-      @RequestPart(value = "file", required = false) MultipartFile evidenceFile,
-      @Parameter(hidden = true) @Authenticated UserContext userContext) {
-    ContractDetailResponse response =
-        contractService.cancelContract(id, request, evidenceFile, userContext);
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.cancelContract(id, userContext);
     return successSingle(response, MessageConstants.CONTRACT_CANCELLED);
   }
 
@@ -138,19 +119,16 @@ public class ContractController extends AbstractBaseController {
   public ResponseEntity<SingleResponse<ContractDetailResponse>> acceptContract(
       @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
     ContractDetailResponse response = contractService.acceptContract(id, userContext);
-    return successSingle(response, MessageConstants.CONTRACT_ACCEPTED);
+    return accepted(response, MessageConstants.CONTRACT_ACCEPTED);
   }
 
   @PostMapping(RouteConstants.CONTRACT_REJECT)
   @Operation(
-      summary = "Reject a contract offer",
-      description =
-          "Rejects a pending contract offer by the freelancer/employee with optional reason")
+      summary = "Reject a contract",
+      description = "Rejects a pending contract offer by the freelancer/employee")
   public ResponseEntity<SingleResponse<ContractDetailResponse>> rejectContract(
-      @PathVariable UUID id,
-      @Valid @RequestBody(required = false) RejectContractRequest request,
-      @Parameter(hidden = true) @Authenticated UserContext userContext) {
-    ContractDetailResponse response = contractService.rejectContract(id, request, userContext);
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    ContractDetailResponse response = contractService.rejectContract(id, userContext);
     return successSingle(response, MessageConstants.CONTRACT_REJECTED);
   }
 
@@ -164,5 +142,15 @@ public class ContractController extends AbstractBaseController {
       @Parameter(hidden = true) @Authenticated UserContext userContext) {
     ContractDetailResponse response = contractService.completeContract(id, request, userContext);
     return successSingle(response, MessageConstants.CONTRACT_COMPLETED);
+  }
+
+  @DeleteMapping(RouteConstants.CONTRACT_ID)
+  @Operation(
+      summary = "Delete a contract",
+      description = "Soft deletes a contract and rejects pending proposals")
+  public ResponseEntity<SuccessResponse> deleteContract(
+      @PathVariable UUID id, @Parameter(hidden = true) @Authenticated UserContext userContext) {
+    contractService.removeContract(id, userContext);
+    return success("Remove contract successfully");
   }
 }

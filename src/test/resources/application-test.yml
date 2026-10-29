@@ -9,12 +9,25 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
 
 app:
   rabbitmq:
     exchange: occupify.notification.exchange
+    project-exchange: occupify.project.exchange
+    user-exchange: occupify.user.exchange
+    user-queue: occupify.core.user.queue
+    user-activated-routing-key: user.activated
     project-created-routing-key: project.created
     project-closed-routing-key: project.closed
+    contract-exchange: occupify.contract.exchange
+    contract-accepted-routing-key: contract.accepted
+    contract-rejected-routing-key: contract.rejected
+    contract-core-queue: occupify.core.contract.queue
+    contract-compensation-routing-key: contract.compensation.*
   auth:
     dev-mock:
       enabled: false

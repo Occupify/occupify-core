@@ -10,6 +10,13 @@ public final class MessageConstants {
   public static final String PROJECT_LIST_RETRIEVED = "Projects retrieved successfully";
   public static final String PROJECT_CLOSED = "Project closed successfully";
 
+  public static final String JOB_CREATED = "Job created successfully";
+  public static final String JOB_UPDATED = "Job updated successfully";
+  public static final String JOB_RETRIEVED = "Job retrieved successfully";
+  public static final String JOB_LIST_RETRIEVED = "Jobs retrieved successfully";
+  public static final String JOB_CLOSED = "Job closed successfully";
+  public static final String JOB_DELETED = "Job deleted successfully";
+
   public static final String CONTRACT_CREATED = "Contract created successfully";
   public static final String CONTRACT_UPDATED = "Contract updated successfully";
   public static final String CONTRACT_RETRIEVED = "Contract retrieved successfully";

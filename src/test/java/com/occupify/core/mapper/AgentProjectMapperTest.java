@@ -2,7 +2,6 @@ package com.occupify.core.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.occupify.core.dto.response.agent.AgentJobResponse;
 import com.occupify.core.dto.response.agent.AgentProjectResponse;
 import com.occupify.core.entity.job.Job;
 import com.occupify.core.entity.project.Project;
@@ -10,7 +9,6 @@ import com.occupify.core.entity.skill.Skill;
 import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.ProjectPeriod;
 import com.occupify.core.enums.ProjectStatus;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;

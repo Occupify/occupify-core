@@ -6,23 +6,21 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.occupify.core.constant.MessageConstants;
 import com.occupify.core.constant.RouteConstants;
-import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
-import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
 import com.occupify.core.dto.response.contract.ContractSummaryResponse;
 import com.occupify.core.enums.ContractStatus;
 import com.occupify.core.security.AuthenticatedUserArgumentResolver;
 import com.occupify.core.service.ContractService;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -57,9 +55,8 @@ class ContractControllerTest {
     CreateContractRequest request =
         CreateContractRequest.builder()
             .jobId(UUID.randomUUID())
-            .title("Hợp đồng Backend Dev")
-            .agreedRate(new BigDecimal("35000000.00"))
-            .salaryType("MONTHLY")
+            .freelancerGmail("dev@occupify.local")
+            .message("Join our team")
             .build();
 
     MockMultipartFile dataPart =
@@ -98,9 +95,9 @@ class ContractControllerTest {
     UUID contractId = UUID.randomUUID();
     UpdateContractRequest request =
         UpdateContractRequest.builder()
-            .title("Updated Contract Title")
-            .agreedRate(new BigDecimal("40000000.00"))
-            .salaryType("MONTHLY")
+            .jobId(UUID.randomUUID())
+            .freelancerGmail("dev@occupify.local")
+            .message("Updated message")
             .build();
 
     MockMultipartFile dataPart =
@@ -192,21 +189,17 @@ class ContractControllerTest {
   }
 
   @Test
-  @DisplayName("POST /contracts/{id}/cancel with JSON body should cancel contract")
-  void shouldCancelContractWithJsonBody() throws Exception {
+  @DisplayName("POST /contracts/{id}/cancel should cancel contract")
+  void shouldCancelContract() throws Exception {
     UUID contractId = UUID.randomUUID();
-    CancelContractRequest cancelReq = new CancelContractRequest("Lý do hủy hợp đồng đã đủ dài");
-
     ContractDetailResponse response =
         ContractDetailResponse.builder().id(contractId).status(ContractStatus.CANCELLED).build();
 
-    when(contractService.cancelContract(eq(contractId), any(), any(), any())).thenReturn(response);
+    when(contractService.cancelContract(eq(contractId), any())).thenReturn(response);
 
     mockMvc
         .perform(
             post(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_CANCEL, contractId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cancelReq))
                 .header("X-User-Id", userId.toString())
                 .header("X-User-Role", "EMPLOYER"))
         .andExpect(status().isOk())
@@ -215,45 +208,14 @@ class ContractControllerTest {
   }
 
   @Test
-  @DisplayName("POST /contracts/{id}/cancel with multipart data and file should cancel contract")
-  void shouldCancelContractWithMultipart() throws Exception {
-    UUID contractId = UUID.randomUUID();
-    CancelContractRequest cancelReq =
-        new CancelContractRequest("Lý do hủy hợp đồng với file đính kèm");
-
-    MockMultipartFile dataPart =
-        new MockMultipartFile(
-            "data",
-            "",
-            MediaType.APPLICATION_JSON_VALUE,
-            objectMapper.writeValueAsBytes(cancelReq));
-    MockMultipartFile filePart =
-        new MockMultipartFile(
-            "file", "evidence.pdf", MediaType.APPLICATION_PDF_VALUE, "evidence proof".getBytes());
-
-    ContractDetailResponse response =
-        ContractDetailResponse.builder().id(contractId).status(ContractStatus.CANCELLED).build();
-
-    when(contractService.cancelContract(eq(contractId), any(), any(), any())).thenReturn(response);
-
-    mockMvc
-        .perform(
-            multipart(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_CANCEL, contractId)
-                .file(dataPart)
-                .file(filePart)
-                .header("X-User-Id", userId.toString())
-                .header("X-User-Role", "EMPLOYER"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_CANCELLED))
-        .andExpect(jsonPath("$.data.status").value("CANCELLED"));
-  }
-
-  @Test
-  @DisplayName("POST /contracts/{id}/accept should accept contract")
+  @DisplayName("POST /contracts/{id}/accept should accept contract and return 202 ACCEPTED")
   void shouldAcceptContract() throws Exception {
     UUID contractId = UUID.randomUUID();
     ContractDetailResponse response =
-        ContractDetailResponse.builder().id(contractId).status(ContractStatus.IN_PROGRESS).build();
+        ContractDetailResponse.builder()
+            .id(contractId)
+            .status(ContractStatus.PENDING_ESCROW)
+            .build();
 
     when(contractService.acceptContract(eq(contractId), any())).thenReturn(response);
 
@@ -262,33 +224,56 @@ class ContractControllerTest {
             post(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_ACCEPT, contractId)
                 .header("X-User-Id", userId.toString())
                 .header("X-User-Role", "USER"))
-        .andExpect(status().isOk())
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.statusCode").value(202))
         .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_ACCEPTED))
-        .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"));
+        .andExpect(jsonPath("$.data.status").value("PENDING_ESCROW"));
+  }
+
+  @Test
+  @DisplayName("PUT /contracts/{id}/accept should return 405 Method Not Allowed")
+  void shouldRejectAcceptContractWithPut() throws Exception {
+    UUID contractId = UUID.randomUUID();
+
+    mockMvc
+        .perform(
+            put(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_ACCEPT, contractId)
+                .header("X-User-Id", userId.toString())
+                .header("X-User-Role", "USER"))
+        .andExpect(status().isMethodNotAllowed());
   }
 
   @Test
   @DisplayName("POST /contracts/{id}/reject should reject contract")
   void shouldRejectContract() throws Exception {
     UUID contractId = UUID.randomUUID();
-    RejectContractRequest rejectReq =
-        RejectContractRequest.builder().reason("Mức thù lao chưa phù hợp").build();
-
     ContractDetailResponse response =
         ContractDetailResponse.builder().id(contractId).status(ContractStatus.CANCELLED).build();
 
-    when(contractService.rejectContract(eq(contractId), any(), any())).thenReturn(response);
+    when(contractService.rejectContract(eq(contractId), any())).thenReturn(response);
 
     mockMvc
         .perform(
             post(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_REJECT, contractId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(rejectReq))
                 .header("X-User-Id", userId.toString())
                 .header("X-User-Role", "USER"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.statusCode").value(200))
         .andExpect(jsonPath("$.message").value(MessageConstants.CONTRACT_REJECTED))
         .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+  }
+
+  @Test
+  @DisplayName("PUT /contracts/{id}/reject should return 405 Method Not Allowed")
+  void shouldRejectRejectContractWithPut() throws Exception {
+    UUID contractId = UUID.randomUUID();
+
+    mockMvc
+        .perform(
+            put(RouteConstants.CONTRACTS + RouteConstants.CONTRACT_REJECT, contractId)
+                .header("X-User-Id", userId.toString())
+                .header("X-User-Role", "USER"))
+        .andExpect(status().isMethodNotAllowed());
   }
 
   @Test

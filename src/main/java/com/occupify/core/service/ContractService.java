@@ -1,10 +1,8 @@
 package com.occupify.core.service;
 
-import com.occupify.core.dto.request.contract.CancelContractRequest;
 import com.occupify.core.dto.request.contract.CompleteContractRequest;
 import com.occupify.core.dto.request.contract.ContractFilterRequest;
 import com.occupify.core.dto.request.contract.CreateContractRequest;
-import com.occupify.core.dto.request.contract.RejectContractRequest;
 import com.occupify.core.dto.request.contract.UpdateContractRequest;
 import com.occupify.core.dto.response.contract.ContractDetailResponse;
 import com.occupify.core.dto.response.contract.ContractSummaryResponse;
@@ -27,19 +25,18 @@ public interface ContractService {
 
   ContractDetailResponse getContractDetail(UUID id, UserContext userContext);
 
-  ContractDetailResponse cancelContract(
-      UUID id, CancelContractRequest request, MultipartFile file, UserContext userContext);
-
-  default ContractDetailResponse cancelContract(
-      UUID id, CancelContractRequest request, UserContext userContext) {
-    return cancelContract(id, request, null, userContext);
-  }
+  ContractDetailResponse cancelContract(UUID id, UserContext userContext);
 
   ContractDetailResponse acceptContract(UUID id, UserContext userContext);
 
-  ContractDetailResponse rejectContract(
-      UUID id, RejectContractRequest request, UserContext userContext);
+  ContractDetailResponse rejectContract(UUID id, UserContext userContext);
 
   ContractDetailResponse completeContract(
       UUID id, CompleteContractRequest request, UserContext userContext);
+
+  void removeContract(UUID id, UserContext userContext);
+
+  void confirmContractEscrow(UUID contractId);
+
+  void compensateContract(UUID contractId, String reason);
 }

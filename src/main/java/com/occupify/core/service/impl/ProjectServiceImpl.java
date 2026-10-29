@@ -33,7 +33,9 @@ import com.occupify.core.repository.user.UserRepository;
 import com.occupify.core.security.UserContext;
 import com.occupify.core.service.JobLifecycleService;
 import com.occupify.core.service.ProjectService;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +94,12 @@ public class ProjectServiceImpl implements ProjectService {
     Project project = projectMapper.toEntity(request);
     project.setEmployer(employer);
 
-    Project saved = projectRepository.save(project);
+    Project saved = projectRepository.saveAndFlush(project);
+
+    Instant createdInstant =
+        saved.getCreatedAt() != null
+            ? saved.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant()
+            : Instant.now();
 
     applicationEventPublisher.publishEvent(
         new ProjectCreatedDomainEvent(
@@ -105,9 +112,11 @@ public class ProjectServiceImpl implements ProjectService {
         new ProjectCreatedEvent(
             saved.getId(),
             saved.getTitle(),
+            saved.getDescription(),
+            saved.getStatus() != null ? saved.getStatus().name() : null,
             employer.getId(),
             employer.getEmail(),
-            saved.getCreatedAt()));
+            createdInstant));
 
     return projectMapper.toResponse(saved);
   }
@@ -339,13 +348,20 @@ public class ProjectServiceImpl implements ProjectService {
             closed.getVersion() != null ? closed.getVersion() : 0L,
             closed.getClosedAt() != null ? closed.getClosedAt() : LocalDateTime.now()));
 
+    Instant closedInstant =
+        closed.getClosedAt() != null
+            ? closed.getClosedAt().atZone(ZoneId.systemDefault()).toInstant()
+            : Instant.now();
+
     projectEventProducer.publishProjectClosed(
         new ProjectClosedEvent(
             closed.getId(),
             closed.getTitle(),
             closed.getEmployer().getId(),
             closed.getEmployer().getEmail(),
-            closed.getClosedAt()));
+            userContext.userId(),
+            userContext.role() != null ? userContext.role().name() : null,
+            closedInstant));
 
     return projectMapper.toResponse(closed);
   }

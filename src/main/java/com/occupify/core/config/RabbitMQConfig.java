@@ -4,7 +4,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.occupify.core.event.UserRegisteredEvent;
+import com.occupify.core.event.ContractAcceptedEvent;
+import com.occupify.core.event.ContractCompensationRequestedEvent;
+import com.occupify.core.event.ContractCreatedEvent;
+import com.occupify.core.event.ContractEscrowLockedEvent;
+import com.occupify.core.event.ContractRejectedEvent;
+import com.occupify.core.event.UserActivatedEvent;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.amqp.core.Binding;
@@ -29,14 +34,20 @@ public class RabbitMQConfig {
   @Value("${app.rabbitmq.exchange:occupify.notification.exchange}")
   private String exchangeName;
 
+  @Value("${app.rabbitmq.project-exchange:occupify.project.exchange}")
+  private String projectExchangeName;
+
+  @Value("${app.rabbitmq.user-exchange:occupify.user.exchange}")
+  private String userExchangeName;
+
   @Value("${app.rabbitmq.core-exchange:occupify.core.exchange}")
   private String coreExchangeName;
 
   @Value("${app.rabbitmq.user-queue:occupify.core.user.queue}")
   private String userQueueName;
 
-  @Value("${app.rabbitmq.user-registered-routing-key:user.registered}")
-  private String userRegisteredRoutingKey;
+  @Value("${app.rabbitmq.user-activated-routing-key:user.activated}")
+  private String userActivatedRoutingKey;
 
   @Value("${app.rabbitmq.dlx-exchange:occupify.core.dlx}")
   private String dlxExchangeName;
@@ -46,6 +57,18 @@ public class RabbitMQConfig {
 
   @Value("${app.rabbitmq.dlq-routing-key:user.dlq}")
   private String dlqRoutingKey;
+
+  @Value("${app.rabbitmq.contract-exchange:occupify.contract.exchange}")
+  private String contractExchangeName;
+
+  @Value("${app.rabbitmq.contract-core-queue:occupify.core.contract.queue}")
+  private String contractCoreQueueName;
+
+  @Value("${app.rabbitmq.contract-compensation-routing-key:contract.compensation.*}")
+  private String contractCompensationRoutingKey;
+
+  @Value("${app.rabbitmq.contract-escrow-locked-routing-key:contract.escrow.locked}")
+  private String contractEscrowLockedRoutingKey;
 
   @Value("${app.rabbitmq.agent-rpc-exchange:occupify.agent.rpc}")
   private String agentRpcExchangeName;
@@ -95,6 +118,16 @@ public class RabbitMQConfig {
   }
 
   @Bean
+  public TopicExchange projectExchange() {
+    return new TopicExchange(projectExchangeName, true, false);
+  }
+
+  @Bean
+  public TopicExchange userExchange() {
+    return new TopicExchange(userExchangeName, true, false);
+  }
+
+  @Bean
   public TopicExchange coreExchange() {
     return new TopicExchange(coreExchangeName, true, false);
   }
@@ -123,10 +156,37 @@ public class RabbitMQConfig {
   }
 
   @Bean
-  public Binding coreUserBinding(Queue coreUserQueue, TopicExchange notificationExchange) {
-    return BindingBuilder.bind(coreUserQueue)
-        .to(notificationExchange)
-        .with(userRegisteredRoutingKey);
+  public Binding coreUserBinding(Queue coreUserQueue, TopicExchange userExchange) {
+    return BindingBuilder.bind(coreUserQueue).to(userExchange).with(userActivatedRoutingKey);
+  }
+
+  @Bean
+  public TopicExchange contractExchange() {
+    return new TopicExchange(contractExchangeName, true, false);
+  }
+
+  @Bean
+  public Queue coreContractQueue() {
+    Map<String, Object> args = new HashMap<>();
+    args.put("x-dead-letter-exchange", dlxExchangeName);
+    args.put("x-dead-letter-routing-key", dlqRoutingKey);
+    return QueueBuilder.durable(contractCoreQueueName).withArguments(args).build();
+  }
+
+  @Bean
+  public Binding coreContractCompensationBinding(
+      Queue coreContractQueue, TopicExchange contractExchange) {
+    return BindingBuilder.bind(coreContractQueue)
+        .to(contractExchange)
+        .with(contractCompensationRoutingKey);
+  }
+
+  @Bean
+  public Binding coreContractEscrowLockedBinding(
+      Queue coreContractQueue, TopicExchange contractExchange) {
+    return BindingBuilder.bind(coreContractQueue)
+        .to(contractExchange)
+        .with(contractEscrowLockedRoutingKey);
   }
 
   @Bean
@@ -142,10 +202,27 @@ public class RabbitMQConfig {
     typeMapper.setTrustedPackages("*");
 
     Map<String, Class<?>> idClassMapping = new HashMap<>();
+    idClassMapping.put("com.occupify.identity.event.UserActivatedEvent", UserActivatedEvent.class);
+    idClassMapping.put("com.occupify.core.event.UserActivatedEvent", UserActivatedEvent.class);
+    idClassMapping.put("UserActivatedEvent", UserActivatedEvent.class);
+    idClassMapping.put("com.occupify.core.event.ContractCreatedEvent", ContractCreatedEvent.class);
+    idClassMapping.put("ContractCreatedEvent", ContractCreatedEvent.class);
     idClassMapping.put(
-        "com.occupify.identity.event.UserRegisteredEvent", UserRegisteredEvent.class);
-    idClassMapping.put("com.occupify.core.event.UserRegisteredEvent", UserRegisteredEvent.class);
-    idClassMapping.put("UserRegisteredEvent", UserRegisteredEvent.class);
+        "com.occupify.core.event.ContractAcceptedEvent", ContractAcceptedEvent.class);
+    idClassMapping.put("ContractAcceptedEvent", ContractAcceptedEvent.class);
+    idClassMapping.put(
+        "com.occupify.core.event.ContractRejectedEvent", ContractRejectedEvent.class);
+    idClassMapping.put("ContractRejectedEvent", ContractRejectedEvent.class);
+    idClassMapping.put(
+        "com.occupify.core.event.ContractCompensationRequestedEvent",
+        ContractCompensationRequestedEvent.class);
+    idClassMapping.put(
+        "ContractCompensationRequestedEvent", ContractCompensationRequestedEvent.class);
+    idClassMapping.put(
+        "com.occupify.payment.event.ContractEscrowLockedEvent", ContractEscrowLockedEvent.class);
+    idClassMapping.put(
+        "com.occupify.core.event.ContractEscrowLockedEvent", ContractEscrowLockedEvent.class);
+    idClassMapping.put("ContractEscrowLockedEvent", ContractEscrowLockedEvent.class);
     typeMapper.setIdClassMapping(idClassMapping);
 
     converter.setJavaTypeMapper(typeMapper);

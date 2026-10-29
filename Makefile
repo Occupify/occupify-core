@@ -38,7 +38,7 @@ help:
 infra:
 	@$(COMPOSE) --env-file core.env up -d
 
-up:
+up: infra
 	@./mvnw spring-boot:run -Dspring-boot.run.profiles=$(PROFILES)
 
 down:
@@ -46,4 +46,3 @@ down:
 
 test-it:
 	./mvnw clean verify
-

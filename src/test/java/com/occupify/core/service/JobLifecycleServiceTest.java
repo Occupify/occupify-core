@@ -43,12 +43,7 @@ public class JobLifecycleServiceTest {
   @Test
   void recompute_whenActiveContractsEqualQuantity_fillsJob() {
     UUID jobId = UUID.randomUUID();
-    Job job =
-        Job.builder()
-            .quantity(2)
-            .status(JobStatus.RECRUITING)
-            .version(0L)
-            .build();
+    Job job = Job.builder().quantity(2).status(JobStatus.RECRUITING).version(0L).build();
     job.setId(jobId);
 
     when(jobRepository.findForUpdateById(jobId)).thenReturn(Optional.of(job));
@@ -66,12 +61,7 @@ public class JobLifecycleServiceTest {
     UUID jobId = UUID.randomUUID();
     Project project = Project.builder().status(ProjectStatus.OPEN).build();
     Job job =
-        Job.builder()
-            .project(project)
-            .quantity(2)
-            .status(JobStatus.FILLED)
-            .version(1L)
-            .build();
+        Job.builder().project(project).quantity(2).status(JobStatus.FILLED).version(1L).build();
     job.setId(jobId);
 
     when(jobRepository.findForUpdateById(jobId)).thenReturn(Optional.of(job));
@@ -87,16 +77,13 @@ public class JobLifecycleServiceTest {
   @Test
   void closeProjectJobs_closesOnlyRecruitingJobs() {
     UUID projectId = UUID.randomUUID();
-    Job recruitingJob =
-        Job.builder().status(JobStatus.RECRUITING).version(0L).build();
+    Job recruitingJob = Job.builder().status(JobStatus.RECRUITING).version(0L).build();
     recruitingJob.setId(UUID.randomUUID());
 
-    Job filledJob =
-        Job.builder().status(JobStatus.FILLED).version(0L).build();
+    Job filledJob = Job.builder().status(JobStatus.FILLED).version(0L).build();
     filledJob.setId(UUID.randomUUID());
 
-    when(jobRepository.findByProjectId(projectId))
-        .thenReturn(List.of(recruitingJob, filledJob));
+    when(jobRepository.findByProjectId(projectId)).thenReturn(List.of(recruitingJob, filledJob));
 
     lifecycleService.closeProjectJobs(projectId);
 
