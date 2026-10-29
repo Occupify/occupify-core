@@ -15,4 +15,18 @@ public record ProjectFilterRequest(
     ExperienceLevel experienceLevel,
     BigDecimal minPrice,
     BigDecimal maxPrice,
-    List<String> skills) {}
+    List<String> skills,
+    UUID excludeEmployerId) {
+
+  public ProjectFilterRequest(
+      String keyword,
+      ProjectStatus status,
+      UUID employerId,
+      ProjectPeriod period,
+      ExperienceLevel experienceLevel,
+      BigDecimal minPrice,
+      BigDecimal maxPrice,
+      List<String> skills) {
+    this(keyword, status, employerId, period, experienceLevel, minPrice, maxPrice, skills, null);
+  }
+}
