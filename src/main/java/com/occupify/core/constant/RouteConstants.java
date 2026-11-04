@@ -22,4 +22,9 @@ public final class RouteConstants {
   public static final String BID_ID = "/{id}";
   public static final String BIDS_MY = "/my";
   public static final String BID_JOB = "/job/{jobId}";
+
+  public static final String REVIEWS = "/reviews";
+  public static final String REVIEW_CONTRACT = "/contract/{contractId}";
+  public static final String REVIEW_USER = "/user/{userId}";
+  public static final String REVIEW_MY = "/my";
 }

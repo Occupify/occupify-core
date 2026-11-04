@@ -11,6 +11,7 @@ import com.occupify.core.event.ContractCompletedEvent;
 import com.occupify.core.event.ContractCreatedEvent;
 import com.occupify.core.event.ContractEscrowLockedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
+import com.occupify.core.event.ReviewCreatedEvent;
 import com.occupify.core.event.UserActivatedEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,6 +78,9 @@ public class RabbitMQConfig {
 
   @Value("${app.rabbitmq.contract-cancelled-routing-key:contract.cancelled}")
   private String contractCancelledRoutingKey;
+
+  @Value("${app.rabbitmq.review-created-routing-key:review.created}")
+  private String reviewCreatedRoutingKey;
 
   @Value("${app.rabbitmq.agent-rpc-exchange:occupify.agent.rpc}")
   private String agentRpcExchangeName;
@@ -237,6 +241,8 @@ public class RabbitMQConfig {
     idClassMapping.put(
         "com.occupify.core.event.ContractCancelledEvent", ContractCancelledEvent.class);
     idClassMapping.put("ContractCancelledEvent", ContractCancelledEvent.class);
+    idClassMapping.put("com.occupify.core.event.ReviewCreatedEvent", ReviewCreatedEvent.class);
+    idClassMapping.put("ReviewCreatedEvent", ReviewCreatedEvent.class);
     typeMapper.setIdClassMapping(idClassMapping);
 
     converter.setJavaTypeMapper(typeMapper);

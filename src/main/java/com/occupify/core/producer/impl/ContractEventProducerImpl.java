@@ -6,6 +6,7 @@ import com.occupify.core.event.ContractCompensationRequestedEvent;
 import com.occupify.core.event.ContractCompletedEvent;
 import com.occupify.core.event.ContractCreatedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
+import com.occupify.core.event.ReviewCreatedEvent;
 import com.occupify.core.producer.ContractEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,9 @@ public class ContractEventProducerImpl implements ContractEventProducer {
 
   @Value("${app.rabbitmq.contract-cancelled-routing-key:contract.cancelled}")
   private String contractCancelledRoutingKey;
+
+  @Value("${app.rabbitmq.review-created-routing-key:review.created}")
+  private String reviewCreatedRoutingKey;
 
   @Value(
       "${app.rabbitmq.contract-compensation-publish-routing-key:contract.compensation.requested}")
@@ -91,6 +95,17 @@ public class ContractEventProducerImpl implements ContractEventProducer {
         contractExchange,
         contractCancelledRoutingKey);
     rabbitTemplate.convertAndSend(contractExchange, contractCancelledRoutingKey, event);
+  }
+
+  @Override
+  public void publishReviewCreated(ReviewCreatedEvent event) {
+    log.info(
+        "[Event Producer] Publishing ReviewCreatedEvent for review [{}] (contract [{}]) to exchange [{}] with routingKey [{}]",
+        event.reviewId(),
+        event.contractId(),
+        contractExchange,
+        reviewCreatedRoutingKey);
+    rabbitTemplate.convertAndSend(contractExchange, reviewCreatedRoutingKey, event);
   }
 
   @Override
