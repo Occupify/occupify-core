@@ -30,4 +30,8 @@ public final class MessageConstants {
   public static final String BID_RETRIEVED = "Bid retrieved successfully";
   public static final String BID_LIST_RETRIEVED = "Bids retrieved successfully";
   public static final String BID_CANCELLED = "Bid cancelled successfully";
+
+  public static final String REVIEW_CREATED = "Review submitted successfully";
+  public static final String REVIEW_RETRIEVED = "Review retrieved successfully";
+  public static final String REVIEW_LIST_RETRIEVED = "Reviews retrieved successfully";
 }

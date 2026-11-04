@@ -6,6 +6,7 @@ import com.occupify.core.event.ContractCompensationRequestedEvent;
 import com.occupify.core.event.ContractCompletedEvent;
 import com.occupify.core.event.ContractCreatedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
+import com.occupify.core.event.ReviewCreatedEvent;
 
 public interface ContractEventProducer {
   void publishContractCreated(ContractCreatedEvent event);
@@ -17,6 +18,8 @@ public interface ContractEventProducer {
   void publishContractCompleted(ContractCompletedEvent event);
 
   void publishContractCancelled(ContractCancelledEvent event);
+
+  void publishReviewCreated(ReviewCreatedEvent event);
 
   void publishContractCompensation(ContractCompensationRequestedEvent event);
 }
