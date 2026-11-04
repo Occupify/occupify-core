@@ -20,6 +20,8 @@ import com.occupify.core.enums.JobStatus;
 import com.occupify.core.enums.OfferStatus;
 import com.occupify.core.enums.SalaryType;
 import com.occupify.core.event.ContractAcceptedEvent;
+import com.occupify.core.event.ContractCancelledEvent;
+import com.occupify.core.event.ContractCompletedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
 import com.occupify.core.exception.contract.ContractErrorCode;
 import com.occupify.core.exception.contract.ContractException;
@@ -267,7 +269,7 @@ public class ContractServiceImpl implements ContractService {
         CancellationContract.builder()
             .contract(contract)
             .requestedByUser(requestedByUser)
-            .reason("Contract cancelled by user")
+            .reason("Contract cancelled by employer")
             .status("ACCEPTED")
             .build();
     cancellation = cancellationContractRepository.save(cancellation);
@@ -281,6 +283,59 @@ public class ContractServiceImpl implements ContractService {
     if (contract.getJob() != null) {
       jobLifecycleService.recompute(contract.getJob().getId());
     }
+
+    UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
+    UUID freelancerId = contract.getEmployee() != null ? contract.getEmployee().getId() : null;
+    UUID jobId = contract.getJob() != null ? contract.getJob().getId() : null;
+    UUID projectId =
+        (contract.getJob() != null && contract.getJob().getProject() != null)
+            ? contract.getJob().getProject().getId()
+            : null;
+
+    SalaryType salaryTypeEnum = SalaryType.FIXED;
+    String effectiveSalaryType = contract.getEffectiveSalaryType();
+    try {
+      if (effectiveSalaryType != null) {
+        salaryTypeEnum = SalaryType.valueOf(effectiveSalaryType.toUpperCase());
+      }
+    } catch (IllegalArgumentException ignored) {
+    }
+
+    String employerEmail =
+        contract.getEmployer() != null ? contract.getEmployer().getEmail() : null;
+    String employerName =
+        (contract.getEmployer() != null && contract.getEmployer().getFullName() != null)
+            ? contract.getEmployer().getFullName()
+            : (employerEmail != null ? employerEmail : "Nhà tuyển dụng");
+    String freelancerEmail =
+        contract.getEmployee() != null
+            ? contract.getEmployee().getEmail()
+            : contract.getFreelancerEmail();
+    String freelancerName =
+        (contract.getEmployee() != null && contract.getEmployee().getFullName() != null)
+            ? contract.getEmployee().getFullName()
+            : (freelancerEmail != null ? freelancerEmail : "Ứng viên");
+
+    ContractCancelledEvent event =
+        new ContractCancelledEvent(
+            UUID.randomUUID(),
+            contract.getId(),
+            jobId,
+            projectId,
+            employerId,
+            freelancerId,
+            userContext.userId(),
+            "EMPLOYER",
+            "Contract cancelled by employer",
+            contract.getEffectiveTitle(),
+            contract.getEffectiveRate(),
+            salaryTypeEnum,
+            LocalDateTime.now(),
+            employerEmail,
+            employerName,
+            freelancerEmail,
+            freelancerName);
+    contractEventProducer.publishContractCancelled(event);
 
     String termsFileUrl = resolveTermsFileUrl(contract.getEffectiveTermsFileKey());
     String evidenceFileUrl = null;
@@ -482,15 +537,70 @@ public class ContractServiceImpl implements ContractService {
     contract.setFinishedAt(LocalDateTime.now());
     contract = contractRepository.save(contract);
 
-    Review review =
-        Review.builder()
-            .contract(contract)
-            .reviewer(contract.getEmployer())
-            .reviewee(contract.getEmployee())
-            .rating(request.rating())
-            .comment(request.comment())
-            .build();
-    reviewRepository.save(review);
+    if (request != null && request.rating() != null) {
+      Review review =
+          Review.builder()
+              .contract(contract)
+              .reviewer(contract.getEmployer())
+              .reviewee(contract.getEmployee())
+              .rating(request.rating())
+              .comment(request.comment())
+              .build();
+      reviewRepository.save(review);
+    }
+
+    UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
+    UUID freelancerId = contract.getEmployee() != null ? contract.getEmployee().getId() : null;
+    UUID jobId = contract.getJob() != null ? contract.getJob().getId() : null;
+    UUID projectId =
+        (contract.getJob() != null && contract.getJob().getProject() != null)
+            ? contract.getJob().getProject().getId()
+            : null;
+
+    SalaryType salaryTypeEnum = SalaryType.FIXED;
+    String effectiveSalaryType = contract.getEffectiveSalaryType();
+    try {
+      if (effectiveSalaryType != null) {
+        salaryTypeEnum = SalaryType.valueOf(effectiveSalaryType.toUpperCase());
+      }
+    } catch (IllegalArgumentException ignored) {
+    }
+
+    String employerEmail =
+        contract.getEmployer() != null ? contract.getEmployer().getEmail() : userContext.email();
+    String employerName =
+        (contract.getEmployer() != null && contract.getEmployer().getFullName() != null)
+            ? contract.getEmployer().getFullName()
+            : (employerEmail != null ? employerEmail : "Nhà tuyển dụng");
+    String freelancerEmail =
+        contract.getEmployee() != null
+            ? contract.getEmployee().getEmail()
+            : contract.getFreelancerEmail();
+    String freelancerName =
+        (contract.getEmployee() != null && contract.getEmployee().getFullName() != null)
+            ? contract.getEmployee().getFullName()
+            : (freelancerEmail != null ? freelancerEmail : "Ứng viên");
+
+    ContractCompletedEvent event =
+        new ContractCompletedEvent(
+            UUID.randomUUID(),
+            contract.getId(),
+            jobId,
+            projectId,
+            employerId,
+            freelancerId,
+            userContext.userId(),
+            "EMPLOYER",
+            contract.getEffectiveTitle(),
+            contract.getEffectiveRate(),
+            salaryTypeEnum,
+            contract.getFinishedAt(),
+            LocalDateTime.now(),
+            employerEmail,
+            employerName,
+            freelancerEmail,
+            freelancerName);
+    contractEventProducer.publishContractCompleted(event);
 
     String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
     return contractMapper.toDetailResponse(contract, termsFileUrl, null);

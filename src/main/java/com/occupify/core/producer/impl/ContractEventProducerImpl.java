@@ -1,7 +1,9 @@
 package com.occupify.core.producer.impl;
 
 import com.occupify.core.event.ContractAcceptedEvent;
+import com.occupify.core.event.ContractCancelledEvent;
 import com.occupify.core.event.ContractCompensationRequestedEvent;
+import com.occupify.core.event.ContractCompletedEvent;
 import com.occupify.core.event.ContractCreatedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
 import com.occupify.core.producer.ContractEventProducer;
@@ -29,6 +31,12 @@ public class ContractEventProducerImpl implements ContractEventProducer {
 
   @Value("${app.rabbitmq.contract-rejected-routing-key:contract.rejected}")
   private String contractRejectedRoutingKey;
+
+  @Value("${app.rabbitmq.contract-completed-routing-key:contract.completed}")
+  private String contractCompletedRoutingKey;
+
+  @Value("${app.rabbitmq.contract-cancelled-routing-key:contract.cancelled}")
+  private String contractCancelledRoutingKey;
 
   @Value(
       "${app.rabbitmq.contract-compensation-publish-routing-key:contract.compensation.requested}")
@@ -62,6 +70,27 @@ public class ContractEventProducerImpl implements ContractEventProducer {
         contractExchange,
         contractRejectedRoutingKey);
     rabbitTemplate.convertAndSend(contractExchange, contractRejectedRoutingKey, event);
+  }
+
+  @Override
+  public void publishContractCompleted(ContractCompletedEvent event) {
+    log.info(
+        "[Event Producer] Publishing ContractCompletedEvent for contract [{}] to exchange [{}] with routingKey [{}]",
+        event.contractId(),
+        contractExchange,
+        contractCompletedRoutingKey);
+    rabbitTemplate.convertAndSend(contractExchange, contractCompletedRoutingKey, event);
+  }
+
+  @Override
+  public void publishContractCancelled(ContractCancelledEvent event) {
+    log.info(
+        "[Event Producer] Publishing ContractCancelledEvent for contract [{}] (cancelled by {}) to exchange [{}] with routingKey [{}]",
+        event.contractId(),
+        event.cancelledByRole(),
+        contractExchange,
+        contractCancelledRoutingKey);
+    rabbitTemplate.convertAndSend(contractExchange, contractCancelledRoutingKey, event);
   }
 
   @Override
