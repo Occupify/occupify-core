@@ -265,11 +265,18 @@ public class ContractServiceImpl implements ContractService {
             .findById(userContext.userId())
             .orElseThrow(() -> new ContractException(ContractErrorCode.USER_NOT_FOUND));
 
+    boolean isEmployer =
+        contract.getEmployer() != null
+            && contract.getEmployer().getId().equals(userContext.userId());
+    String cancelledByRole = isEmployer ? "EMPLOYER" : "EMPLOYEE";
+    String cancellationReason =
+        isEmployer ? "Contract cancelled by employer" : "Contract cancelled by freelancer";
+
     CancellationContract cancellation =
         CancellationContract.builder()
             .contract(contract)
             .requestedByUser(requestedByUser)
-            .reason("Contract cancelled by employer")
+            .reason(cancellationReason)
             .status("ACCEPTED")
             .build();
     cancellation = cancellationContractRepository.save(cancellation);
@@ -325,8 +332,8 @@ public class ContractServiceImpl implements ContractService {
             employerId,
             freelancerId,
             userContext.userId(),
-            "EMPLOYER",
-            "Contract cancelled by employer",
+            cancelledByRole,
+            cancellationReason,
             contract.getEffectiveTitle(),
             contract.getEffectiveRate(),
             salaryTypeEnum,
