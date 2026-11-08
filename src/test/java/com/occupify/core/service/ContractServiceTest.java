@@ -47,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -67,6 +68,7 @@ class ContractServiceTest {
   private ContractMapper contractMapper;
   private com.occupify.core.producer.ContractEventProducer contractEventProducer;
   private JobLifecycleService jobLifecycleService;
+  private ApplicationEventPublisher applicationEventPublisher;
 
   private ContractService contractService;
 
@@ -91,6 +93,7 @@ class ContractServiceTest {
     contractMapper = mock(ContractMapper.class);
     contractEventProducer = mock(com.occupify.core.producer.ContractEventProducer.class);
     jobLifecycleService = mock(JobLifecycleService.class);
+    applicationEventPublisher = mock(ApplicationEventPublisher.class);
 
     contractService =
         new ContractServiceImpl(
@@ -104,7 +107,8 @@ class ContractServiceTest {
             storageService,
             contractMapper,
             contractEventProducer,
-            jobLifecycleService);
+            jobLifecycleService,
+            applicationEventPublisher);
 
     employerId = UUID.randomUUID();
     employerContext = new UserContext(employerId, UserRole.USER, "employer@test.local");
@@ -520,6 +524,15 @@ class ContractServiceTest {
 
     when(contractRepository.findById(contractId)).thenReturn(Optional.of(contract));
     when(contractRepository.save(any(Contract.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(reviewRepository.save(any(Review.class)))
+        .thenAnswer(
+            inv -> {
+              Review r = inv.getArgument(0);
+              if (r.getId() == null) {
+                r.setId(UUID.randomUUID());
+              }
+              return r;
+            });
 
     ContractDetailResponse mockResponse =
         ContractDetailResponse.builder().status(ContractStatus.COMPLETED).build();
@@ -543,6 +556,11 @@ class ContractServiceTest {
     assertThat(savedReview.getReviewer()).isEqualTo(employer);
     assertThat(savedReview.getReviewee()).isEqualTo(employee);
     assertThat(savedReview.getContract()).isEqualTo(contract);
+
+    verify(applicationEventPublisher)
+        .publishEvent(any(com.occupify.core.event.domain.ReviewCreatedDomainEvent.class));
+    verify(applicationEventPublisher)
+        .publishEvent(any(com.occupify.core.event.domain.ContractCompletedDomainEvent.class));
   }
 
   @Test
