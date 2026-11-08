@@ -23,8 +23,14 @@ import com.occupify.core.event.ContractAcceptedEvent;
 import com.occupify.core.event.ContractCancelledEvent;
 import com.occupify.core.event.ContractCompletedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
+import com.occupify.core.event.ReviewCreatedEvent;
+import com.occupify.core.event.domain.ContractCancelledDomainEvent;
+import com.occupify.core.event.domain.ContractCompletedDomainEvent;
+import com.occupify.core.event.domain.ReviewCreatedDomainEvent;
 import com.occupify.core.exception.contract.ContractErrorCode;
 import com.occupify.core.exception.contract.ContractException;
+import com.occupify.core.exception.review.ReviewErrorCode;
+import com.occupify.core.exception.review.ReviewException;
 import com.occupify.core.mapper.ContractMapper;
 import com.occupify.core.producer.ContractEventProducer;
 import com.occupify.core.repository.bid.BidRepository;
@@ -46,6 +52,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -73,6 +80,7 @@ public class ContractServiceImpl implements ContractService {
   private final ContractMapper contractMapper;
   private final ContractEventProducer contractEventProducer;
   private final JobLifecycleService jobLifecycleService;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   public ContractDetailResponse createContract(
@@ -342,7 +350,7 @@ public class ContractServiceImpl implements ContractService {
             employerName,
             freelancerEmail,
             freelancerName);
-    contractEventProducer.publishContractCancelled(event);
+    applicationEventPublisher.publishEvent(new ContractCancelledDomainEvent(event));
 
     String termsFileUrl = resolveTermsFileUrl(contract.getEffectiveTermsFileKey());
     String evidenceFileUrl = null;
@@ -545,6 +553,16 @@ public class ContractServiceImpl implements ContractService {
     contract = contractRepository.save(contract);
 
     if (request != null && request.rating() != null) {
+      if (contract.getEmployee() == null) {
+        throw new ReviewException(ReviewErrorCode.INVALID_REVIEW_TARGET);
+      }
+      if (contract.getEmployer().getId().equals(contract.getEmployee().getId())) {
+        throw new ReviewException(ReviewErrorCode.INVALID_REVIEW_TARGET);
+      }
+      if (reviewRepository.existsByContractIdAndReviewerId(
+          contract.getId(), contract.getEmployer().getId())) {
+        throw new ReviewException(ReviewErrorCode.DUPLICATE_REVIEW);
+      }
       Review review =
           Review.builder()
               .contract(contract)
@@ -553,7 +571,37 @@ public class ContractServiceImpl implements ContractService {
               .rating(request.rating())
               .comment(request.comment())
               .build();
-      reviewRepository.save(review);
+      Review savedReview = reviewRepository.save(review);
+      if (savedReview != null) {
+        review = savedReview;
+      }
+      UUID reviewId = review.getId() != null ? review.getId() : UUID.randomUUID();
+
+      String reviewerName =
+          contract.getEmployer().getFullName() != null
+                  && !contract.getEmployer().getFullName().isBlank()
+              ? contract.getEmployer().getFullName()
+              : contract.getEmployer().getEmail();
+      String revieweeName =
+          contract.getEmployee().getFullName() != null
+                  && !contract.getEmployee().getFullName().isBlank()
+              ? contract.getEmployee().getFullName()
+              : contract.getEmployee().getEmail();
+
+      ReviewCreatedEvent reviewEvent =
+          new ReviewCreatedEvent(
+              UUID.randomUUID(),
+              reviewId,
+              contract.getId(),
+              contract.getEmployer().getId(),
+              reviewerName,
+              contract.getEmployee().getId(),
+              revieweeName,
+              contract.getEmployee().getEmail(),
+              review.getRating(),
+              review.getComment(),
+              LocalDateTime.now());
+      applicationEventPublisher.publishEvent(new ReviewCreatedDomainEvent(reviewEvent));
     }
 
     UUID employerId = contract.getEmployer() != null ? contract.getEmployer().getId() : null;
@@ -607,7 +655,7 @@ public class ContractServiceImpl implements ContractService {
             employerName,
             freelancerEmail,
             freelancerName);
-    contractEventProducer.publishContractCompleted(event);
+    applicationEventPublisher.publishEvent(new ContractCompletedDomainEvent(event));
 
     String termsFileUrl = resolveTermsFileUrl(contract.getTermsFileKey());
     return contractMapper.toDetailResponse(contract, termsFileUrl, null);

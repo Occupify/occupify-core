@@ -7,6 +7,7 @@ import com.occupify.core.entity.review.Review;
 import com.occupify.core.entity.user.User;
 import com.occupify.core.enums.ContractStatus;
 import com.occupify.core.event.ReviewCreatedEvent;
+import com.occupify.core.event.domain.ReviewCreatedDomainEvent;
 import com.occupify.core.exception.contract.ContractErrorCode;
 import com.occupify.core.exception.contract.ContractException;
 import com.occupify.core.exception.review.ReviewErrorCode;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class ReviewServiceImpl implements ReviewService {
   private final UserRepository userRepository;
   private final ReviewMapper reviewMapper;
   private final ContractEventProducer contractEventProducer;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Override
   public ReviewResponse createReview(CreateReviewRequest request, UserContext userContext) {
@@ -117,7 +120,7 @@ public class ReviewServiceImpl implements ReviewService {
             review.getRating(),
             review.getComment(),
             LocalDateTime.now());
-    contractEventProducer.publishReviewCreated(event);
+    applicationEventPublisher.publishEvent(new ReviewCreatedDomainEvent(event));
 
     return reviewMapper.toResponse(review);
   }
@@ -126,6 +129,27 @@ public class ReviewServiceImpl implements ReviewService {
   @Transactional(readOnly = true)
   public List<ReviewResponse> getReviewsByContract(UUID contractId, UserContext userContext) {
     log.info("[ReviewService] Getting reviews for contract [{}]", contractId);
+
+    Contract contract =
+        contractRepository
+            .findById(contractId)
+            .filter(c -> c.getDeletedAt() == null)
+            .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+
+    if (!userContext.isAdmin()) {
+      boolean isEmployer =
+          contract.getEmployer() != null
+              && contract.getEmployer().getId().equals(userContext.userId());
+      boolean isEmployee =
+          (contract.getEmployee() != null
+                  && contract.getEmployee().getId().equals(userContext.userId()))
+              || (contract.getFreelancerEmail() != null
+                  && contract.getFreelancerEmail().equalsIgnoreCase(userContext.email()));
+      if (!isEmployer && !isEmployee) {
+        throw new ReviewException(ReviewErrorCode.FORBIDDEN_REVIEW);
+      }
+    }
+
     return reviewRepository.findByContractId(contractId).stream()
         .map(reviewMapper::toResponse)
         .toList();
