@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: occupify-core
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+    parser:
+      allow-unquoted-control-chars: true
   servlet:
     multipart:
       max-file-size: 10MB
@@ -39,6 +43,9 @@ spring:
 app:
   rabbitmq:
     exchange: ${RABBITMQ_NOTIFICATION_EXCHANGE:occupify.notification.exchange}
+    report-exchange: ${RABBITMQ_REPORT_EXCHANGE:occupify.report.exchange}
+    report-core-queue: ${RABBITMQ_REPORT_CORE_QUEUE:occupify.core.report.queue}
+    report-updated-routing-key: ${RABBITMQ_REPORT_UPDATED_ROUTING_KEY:report.updated}
     project-exchange: ${RABBITMQ_PROJECT_EXCHANGE:occupify.project.exchange}
     user-exchange: ${RABBITMQ_USER_EXCHANGE:occupify.user.exchange}
     core-exchange: ${RABBITMQ_CORE_EXCHANGE:occupify.core.exchange}

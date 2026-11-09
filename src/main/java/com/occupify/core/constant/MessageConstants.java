@@ -34,4 +34,6 @@ public final class MessageConstants {
   public static final String REVIEW_CREATED = "Review submitted successfully";
   public static final String REVIEW_RETRIEVED = "Review retrieved successfully";
   public static final String REVIEW_LIST_RETRIEVED = "Reviews retrieved successfully";
+
+  public static final String REPORT_CREATED = "Report submitted successfully";
 }
