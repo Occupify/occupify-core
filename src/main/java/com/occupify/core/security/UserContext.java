@@ -4,6 +4,10 @@ import com.occupify.core.enums.UserRole;
 import java.util.UUID;
 
 public record UserContext(UUID userId, UserRole role, String email) {
+  public UUID getUserId() {
+    return userId;
+  }
+
   public boolean isAdmin() {
     return role == UserRole.ADMIN;
   }

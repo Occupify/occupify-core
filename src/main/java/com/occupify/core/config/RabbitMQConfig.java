@@ -11,6 +11,8 @@ import com.occupify.core.event.ContractCompletedEvent;
 import com.occupify.core.event.ContractCreatedEvent;
 import com.occupify.core.event.ContractEscrowLockedEvent;
 import com.occupify.core.event.ContractRejectedEvent;
+import com.occupify.core.event.ReportCreatedEvent;
+import com.occupify.core.event.ReportUpdatedEvent;
 import com.occupify.core.event.ReviewCreatedEvent;
 import com.occupify.core.event.UserActivatedEvent;
 import java.util.HashMap;
@@ -96,6 +98,15 @@ public class RabbitMQConfig {
 
   @Value("${app.rabbitmq.project-get-routing-key:core.project.get}")
   private String projectGetRoutingKey;
+
+  @Value("${app.rabbitmq.report-exchange:occupify.report.exchange}")
+  private String reportExchangeName;
+
+  @Value("${app.rabbitmq.report-core-queue:occupify.core.report.queue}")
+  private String reportCoreQueueName;
+
+  @Value("${app.rabbitmq.report-updated-routing-key:report.updated}")
+  private String reportUpdatedRoutingKey;
 
   @Bean
   public DirectExchange agentRpcExchange() {
@@ -202,6 +213,24 @@ public class RabbitMQConfig {
   }
 
   @Bean
+  public TopicExchange reportExchange() {
+    return new TopicExchange(reportExchangeName, true, false);
+  }
+
+  @Bean
+  public Queue reportCoreQueue() {
+    Map<String, Object> args = new HashMap<>();
+    args.put("x-dead-letter-exchange", dlxExchangeName);
+    args.put("x-dead-letter-routing-key", dlqRoutingKey);
+    return QueueBuilder.durable(reportCoreQueueName).withArguments(args).build();
+  }
+
+  @Bean
+  public Binding reportCoreUpdatedBinding(Queue reportCoreQueue, TopicExchange reportExchange) {
+    return BindingBuilder.bind(reportCoreQueue).to(reportExchange).with(reportUpdatedRoutingKey);
+  }
+
+  @Bean
   public MessageConverter jackson2JsonMessageConverter() {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
@@ -243,6 +272,13 @@ public class RabbitMQConfig {
     idClassMapping.put("ContractCancelledEvent", ContractCancelledEvent.class);
     idClassMapping.put("com.occupify.core.event.ReviewCreatedEvent", ReviewCreatedEvent.class);
     idClassMapping.put("ReviewCreatedEvent", ReviewCreatedEvent.class);
+    idClassMapping.put("com.occupify.core.event.ReportCreatedEvent", ReportCreatedEvent.class);
+    idClassMapping.put("ReportCreatedEvent", ReportCreatedEvent.class);
+    idClassMapping.put(
+        "com.occupify.administration.event.ReportCreatedEvent", ReportCreatedEvent.class);
+    idClassMapping.put("com.occupify.core.event.ReportUpdatedEvent", ReportUpdatedEvent.class);
+    idClassMapping.put("ReportUpdatedEvent", ReportUpdatedEvent.class);
+    idClassMapping.put("com.occupify.admin.event.ReportUpdatedEvent", ReportUpdatedEvent.class);
     typeMapper.setIdClassMapping(idClassMapping);
 
     converter.setJavaTypeMapper(typeMapper);

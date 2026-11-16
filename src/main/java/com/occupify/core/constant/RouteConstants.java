@@ -27,4 +27,6 @@ public final class RouteConstants {
   public static final String REVIEW_CONTRACT = "/contract/{contractId}";
   public static final String REVIEW_USER = "/user/{userId}";
   public static final String REVIEW_MY = "/my";
+
+  public static final String REPORTS = "/reports";
 }
