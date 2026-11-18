@@ -77,7 +77,7 @@ jobs:
   deploy:
     name: Deploy Core Service (AWS)
     needs: build-and-push-ghcr
-    runs-on: [self-hosted, backend]
+    runs-on: [self-hosted, aws-core]
 
     steps:
       - name: Checkout GitOps Manifests
