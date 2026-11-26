@@ -27,7 +27,8 @@ public class AgentProjectCreateListener {
   @Transactional
   public void handleCreateProjectAndJobs(AgentCreateProjectAndJobsEvent event) {
     if (event == null || event.userId() == null || event.project() == null) {
-      log.warn("[Agent Project Consumer] Received invalid AgentCreateProjectAndJobsEvent: {}", event);
+      log.warn(
+          "[Agent Project Consumer] Received invalid AgentCreateProjectAndJobsEvent: {}", event);
       return;
     }
 
