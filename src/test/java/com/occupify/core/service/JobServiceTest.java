@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 class JobServiceTest {
 
@@ -39,6 +40,7 @@ class JobServiceTest {
   private SkillRepository skillRepository;
   private StorageService storageService;
   private JobMapper jobMapper;
+  private ApplicationEventPublisher eventPublisher;
   private JobServiceImpl jobService;
 
   private UUID employerId;
@@ -55,6 +57,7 @@ class JobServiceTest {
     skillRepository = mock(SkillRepository.class);
     storageService = mock(StorageService.class);
     jobMapper = mock(JobMapper.class);
+    eventPublisher = mock(ApplicationEventPublisher.class);
 
     jobService =
         new JobServiceImpl(
@@ -63,7 +66,8 @@ class JobServiceTest {
             bidRepository,
             skillRepository,
             storageService,
-            jobMapper);
+            jobMapper,
+            eventPublisher);
 
     employerId = UUID.randomUUID();
     projectId = UUID.randomUUID();
@@ -172,11 +176,13 @@ class JobServiceTest {
 
     when(jobRepository.findWithProjectByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
     when(bidRepository.findByJobId(jobId)).thenReturn(List.of());
+    when(jobRepository.save(job)).thenReturn(job);
 
     jobService.deleteJob(jobId, employerContext);
 
     assertThat(job.getStatus()).isEqualTo(JobStatus.CLOSED);
     assertThat(job.getDeletedAt()).isNotNull();
     verify(jobRepository).save(job);
+    verify(eventPublisher).publishEvent(any(Object.class));
   }
 }
