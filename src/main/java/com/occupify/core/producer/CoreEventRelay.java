@@ -1,5 +1,6 @@
 package com.occupify.core.producer;
 
+import com.occupify.core.event.domain.JobCreatedDomainEvent;
 import com.occupify.core.event.domain.JobStatusChangedDomainEvent;
 import com.occupify.core.event.domain.ProjectClosedDomainEvent;
 import com.occupify.core.event.domain.ProjectCreatedDomainEvent;
@@ -35,6 +36,11 @@ public class CoreEventRelay {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void onProjectClosed(ProjectClosedDomainEvent event) {
     publishSafely("project.closed", event);
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void onJobCreated(JobCreatedDomainEvent event) {
+    publishSafely("job.created", event);
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

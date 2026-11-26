@@ -99,6 +99,12 @@ public class RabbitMQConfig {
   @Value("${app.rabbitmq.project-get-routing-key:core.project.get}")
   private String projectGetRoutingKey;
 
+  @Value("${app.rabbitmq.agent-project-create-queue:occupify.core.agent.project.create}")
+  private String agentProjectCreateQueueName;
+
+  @Value("${app.rabbitmq.agent-project-create-routing-key:agentic.project.create}")
+  private String agentProjectCreateRoutingKey;
+
   @Value("${app.rabbitmq.report-exchange:occupify.report.exchange}")
   private String reportExchangeName;
 
@@ -153,6 +159,19 @@ public class RabbitMQConfig {
   @Bean
   public TopicExchange coreExchange() {
     return new TopicExchange(coreExchangeName, true, false);
+  }
+
+  @Bean
+  public Queue agentProjectCreateQueue() {
+    return QueueBuilder.durable(agentProjectCreateQueueName).build();
+  }
+
+  @Bean
+  public Binding agentProjectCreateBinding(
+      Queue agentProjectCreateQueue, TopicExchange coreExchange) {
+    return BindingBuilder.bind(agentProjectCreateQueue)
+        .to(coreExchange)
+        .with(agentProjectCreateRoutingKey);
   }
 
   @Bean

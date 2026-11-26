@@ -10,6 +10,8 @@ import com.occupify.core.entity.project.Project;
 import com.occupify.core.entity.skill.Skill;
 import com.occupify.core.enums.BidStatus;
 import com.occupify.core.enums.JobStatus;
+import com.occupify.core.event.domain.JobCreatedDomainEvent;
+import com.occupify.core.event.domain.JobStatusChangedDomainEvent;
 import com.occupify.core.exception.contract.ContractErrorCode;
 import com.occupify.core.exception.contract.ContractException;
 import com.occupify.core.exception.project.ProjectErrorCode;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -49,6 +52,7 @@ public class JobServiceImpl implements JobService {
   private final SkillRepository skillRepository;
   private final StorageService storageService;
   private final JobMapper jobMapper;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Override
   public JobDetailResponse createJob(
@@ -99,6 +103,13 @@ public class JobServiceImpl implements JobService {
             .build();
 
     Job savedJob = jobRepository.save(job);
+    eventPublisher.publishEvent(
+        new JobCreatedDomainEvent(
+            UUID.randomUUID(),
+            project.getId(),
+            savedJob.getId(),
+            savedJob.getStatus().name(),
+            LocalDateTime.now()));
     String termsFileUrl = resolveTermsFileUrl(savedJob.getTermsFileKey());
     return jobMapper.toJobDetailResponse(savedJob, 0, termsFileUrl);
   }
@@ -199,6 +210,15 @@ public class JobServiceImpl implements JobService {
     }
 
     Job savedJob = jobRepository.save(job);
+    eventPublisher.publishEvent(
+        new JobStatusChangedDomainEvent(
+            UUID.randomUUID(),
+            savedJob.getProject() != null ? savedJob.getProject().getId() : null,
+            savedJob.getId(),
+            savedJob.getVersion() != null ? savedJob.getVersion() : 0L,
+            savedJob.getStatus().name(),
+            savedJob.getStatus().name(),
+            LocalDateTime.now()));
     int activeBidsCount = countActiveBids(savedJob.getId());
     String termsFileUrl = resolveTermsFileUrl(savedJob.getTermsFileKey());
     return jobMapper.toJobDetailResponse(savedJob, activeBidsCount, termsFileUrl);
@@ -219,12 +239,22 @@ public class JobServiceImpl implements JobService {
       throw new ContractException(ContractErrorCode.JOB_ALREADY_CLOSED);
     }
 
+    JobStatus oldStatus = job.getStatus();
     job.setStatus(JobStatus.CLOSED);
 
     // Reject all pending bids for this job
     rejectPendingBids(job.getId());
 
     Job savedJob = jobRepository.save(job);
+    eventPublisher.publishEvent(
+        new JobStatusChangedDomainEvent(
+            UUID.randomUUID(),
+            savedJob.getProject() != null ? savedJob.getProject().getId() : null,
+            savedJob.getId(),
+            savedJob.getVersion() != null ? savedJob.getVersion() : 0L,
+            oldStatus != null ? oldStatus.name() : null,
+            JobStatus.CLOSED.name(),
+            LocalDateTime.now()));
     String termsFileUrl = resolveTermsFileUrl(savedJob.getTermsFileKey());
     return jobMapper.toJobDetailResponse(savedJob, 0, termsFileUrl);
   }
@@ -240,12 +270,22 @@ public class JobServiceImpl implements JobService {
 
     verifyJobOwnership(job, userContext);
 
+    JobStatus oldStatus = job.getStatus();
     job.setDeletedAt(LocalDateTime.now());
     job.setStatus(JobStatus.CLOSED);
 
     rejectPendingBids(job.getId());
 
-    jobRepository.save(job);
+    Job savedJob = jobRepository.save(job);
+    eventPublisher.publishEvent(
+        new JobStatusChangedDomainEvent(
+            UUID.randomUUID(),
+            savedJob.getProject() != null ? savedJob.getProject().getId() : null,
+            savedJob.getId(),
+            savedJob.getVersion() != null ? savedJob.getVersion() : 0L,
+            oldStatus != null ? oldStatus.name() : null,
+            JobStatus.CLOSED.name(),
+            LocalDateTime.now()));
   }
 
   private void verifyJobOwnership(Job job, UserContext userContext) {
